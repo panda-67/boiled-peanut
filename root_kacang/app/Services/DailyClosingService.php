@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CashDifference;
 use App\Models\DailyClosing;
 use App\Models\Sale;
 use App\Models\Settlement;
@@ -33,6 +34,16 @@ class DailyClosingService
                 ->sum('amount_received');
 
             $difference = $received - $expected;
+
+            if ($difference !== 0) {
+                CashDifference::create([
+                    'date' => $date,
+                    'expected_cash' => $expected,
+                    'received_cash' => $received,
+                    'difference' => $difference,
+                    'note' => null,
+                ]);
+            }
 
             return DailyClosing::create([
                 'date' => $date,
