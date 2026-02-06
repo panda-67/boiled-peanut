@@ -1,58 +1,141 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Kacang Rebus — Ledger-Based Inventory System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Kacang Rebus adalah aplikasi pencatatan stok dan biaya produksi berbasis **ledger (transaction-based)**.
+Aplikasi ini **tidak menyimpan stok dalam kolom**, melainkan menghitung stok dari akumulasi transaksi.
 
-## About Laravel
+Pendekatan ini memastikan sistem:
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Audit-friendly
+- Konsisten secara akuntansi
+- Tahan terhadap race condition
+- Mudah ditelusuri secara historis
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Prinsip Inti
 
-## Learning Laravel
+1. Tidak ada update langsung ke kolom `stock`
+2. Semua pergerakan barang dicatat sebagai transaksi (ledger)
+3. Nilai stok = `SUM(quantity)`
+4. Barang keluar **selalu bernilai negatif**
+5. Semua proses bisnis lewat Service Layer
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Entitas Utama
 
-## Laravel Sponsors
+### Product
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Produk jadi yang dihasilkan dari produksi dan dijual ke pelanggan.
 
-### Premium Partners
+- Stok dihitung dari `product_transactions`
+- Tidak ada kolom `stock` aktif
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```php
+$product->stock();
+```
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Material
 
-## Code of Conduct
+Bahan baku produksi.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- Menggunakan `stock_movements`
+- Bisa bertipe `is_stocked = true`
 
-## Security Vulnerabilities
+```php
+$material->stock();
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
+
+### Production
+
+Mewakili satu proses produksi.
+
+Field penting:
+
+- `date`
+- `product_id`
+- `output_quantity`
+- `total_cost`
+- `status` (`draft`, `completed`)
+
+---
+
+### Sale
+
+Transaksi penjualan produk jadi.
+
+---
+
+## Ledger / Tabel Transaksi
+
+### StockMovement (Material Ledger)
+
+Digunakan untuk semua pergerakan **bahan baku**.
+
+| Kolom | Keterangan |
+|------|-----------|
+| material_id | ID material |
+| quantity | + masuk, − keluar |
+| type | in / out |
+| reference_type | INITIAL / PRODUCTION |
+| reference_id | ID referensi |
+
+---
+
+### ProductTransaction (Product Ledger)
+
+Digunakan untuk semua pergerakan **produk jadi**.
+
+| Kolom | Keterangan |
+|------|-----------|
+| product_id | ID produk |
+| quantity | + masuk, − keluar |
+| type | in / out |
+| reference_type | PRODUCTION / SALE |
+| reference_id | ID produksi / sale |
+
+---
+
+## Alur Produksi
+
+Eksekusi dilakukan oleh `ProductionService::execute()`.
+
+Langkah:
+
+1. Validasi status `draft`
+2. Catat StockMovement OUT
+3. Hitung biaya
+4. Catat ProductTransaction IN
+5. Status menjadi `completed`
+
+---
+
+## Alur Penjualan
+
+Eksekusi dilakukan oleh `ConfirmSaleService::confirm()`.
+
+Langkah:
+
+1. Ambil sale items
+2. Catat ProductTransaction OUT
+3. Stok berkurang via ledger
+
+---
+
+## Aturan Wajib
+
+- Jangan update stok langsung
+- Semua keluar bernilai negatif
+- Semua transaksi wajib punya reference
+- Service layer adalah satu-satunya pintu eksekusi
+
+---
+
+Dokumentasi ini adalah kontrak sistem.
 
 ## License
 

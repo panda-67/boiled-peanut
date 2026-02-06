@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Services;
+
+use App\Domain\Inventory\ReferenceType;
+use App\Models\Material;
+use App\Models\Production;
+use App\Models\StockMovement;
+
+class StockMovementService
+{
+    public function inForPurchase(
+        Material $material,
+        float $qty,
+        ?string $note = null
+    ): void {
+        StockMovement::create([
+            'material_id'    => $material->id,
+            'quantity'       => $qty, // POSITIF
+            'type'           => ReferenceType::PURCHASE,
+            'note'           => $note,
+        ]);
+    }
+
+    public function outForProduction(
+        Material $material,
+        float $qty,
+        Production $production
+    ): StockMovement {
+        if ($material->stock() < $qty) {
+            throw new \Exception('Stok material tidak mencukupi');
+        }
+
+        return StockMovement::create([
+            'material_id'    => $material->id,
+            'quantity'       => -abs($qty),
+            'type'           => 'out',
+            'reference_type' => ReferenceType::PRODUCTION,
+            'reference_id'   => $production->id,
+            'note'           => 'Material used for production',
+        ]);
+    }
+}
