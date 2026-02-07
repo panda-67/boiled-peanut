@@ -7,6 +7,7 @@ use App\Models\Material;
 use App\Models\Product;
 use App\Models\Production;
 use App\Models\StockMovement;
+use App\Models\User;
 use App\Services\ProductionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -18,6 +19,14 @@ class ProductionFlowTest extends TestCase
 
     public function test_it_can_execute_production_flow_correctly()
     {
+        // Arrange
+        $this->setUpLocations();
+
+        $user = User::factory()->create();
+        $this->assignUserToLocation($user, $this->central);
+        $this->actingAs($user);
+
+
         // Product
         $product = Product::factory()->create();
 
@@ -35,6 +44,7 @@ class ProductionFlowTest extends TestCase
         // Initial material stock (ledger)
         StockMovement::create([
             'material_id' => $materialA->id,
+            'location_id' => $this->central->id,
             'quantity' => 10,
             'type' => 'in',
             'reference_type' => ReferenceType::INITIAL,
@@ -43,6 +53,7 @@ class ProductionFlowTest extends TestCase
 
         StockMovement::create([
             'material_id' => $materialB->id,
+            'location_id' => $this->central->id,
             'quantity' => 20,
             'type' => 'in',
             'reference_type' => ReferenceType::INITIAL,
@@ -75,10 +86,10 @@ class ProductionFlowTest extends TestCase
         $production->refresh();
 
         $this->assertEquals('completed', $production->status);
-        $this->assertEquals(400, $production->total_cost);
+        $this->assertEquals(400, $production->total_cost); // 100 * 2 + 50 * 4 = 400
 
-        $this->assertEquals(8, $materialA->stock());
-        $this->assertEquals(16, $materialB->stock());
+        $this->assertEquals(8, $materialA->stockAt($this->central)); // 10 - 2 = 8
+        $this->assertEquals(16, $materialB->stockAt($this->central)); // 20 - 4 = 16
         $this->assertEquals(5, $product->stock());
 
         $this->assertDatabaseHas('stock_movements', [

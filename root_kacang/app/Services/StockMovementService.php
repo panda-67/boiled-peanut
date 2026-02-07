@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Domain\Inventory\ReferenceType;
+use App\Models\Location;
 use App\Models\Material;
 use App\Models\Production;
 use App\Models\StockMovement;
@@ -16,6 +17,7 @@ class StockMovementService
     ): void {
         StockMovement::create([
             'material_id'    => $material->id,
+            'location_id'    => $this->centralLocation()->id,
             'quantity'       => $qty, // POSITIF
             'type'           => ReferenceType::PURCHASE,
             'note'           => $note,
@@ -33,11 +35,17 @@ class StockMovementService
 
         return StockMovement::create([
             'material_id'    => $material->id,
+            'location_id'    => $this->centralLocation()->id,
             'quantity'       => -abs($qty),
             'type'           => 'out',
             'reference_type' => ReferenceType::PRODUCTION,
             'reference_id'   => $production->id,
             'note'           => 'Material used for production',
         ]);
+    }
+
+    private function centralLocation(): Location
+    {
+        return Location::where('type', 'central')->firstOrFail();
     }
 }

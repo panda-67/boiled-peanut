@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Location;
 use App\Models\Sale;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -18,7 +19,8 @@ class SaleFactory extends Factory
             'sale_date'   => $this->faker->date(),
             'total'  => 0,
             'status' => 'draft',
-            'created_by'     => User::factory(),
+            'location_id' => Location::factory(),
+            'user_id'     => User::factory(),
         ];
     }
 

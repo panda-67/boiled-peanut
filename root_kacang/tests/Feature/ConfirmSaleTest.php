@@ -6,6 +6,7 @@ use App\Domain\Inventory\ReferenceType;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\ProductTransaction;
+use App\Models\User;
 use App\Services\ConfirmSaleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -14,101 +15,118 @@ class ConfirmSaleTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_confirms_sale_and_reduces_product_stock_via_transaction()
+    public function test_it_confirms_sale_and_reduces_product_stock_at_sale_point()
     {
         // Arrange
+        $this->setUpLocations();
+
+        $user = User::factory()->create();
+        $this->assignUserToLocation($user, $this->salesPoint);
+        $this->actingAs($user);
+
         $product = Product::factory()->create();
 
-        // seed stok lewat ledger, BUKAN kolom stock
+        // Seed stok di SALE POINT (hasil transfer, bukan produksi langsung)
         ProductTransaction::create([
             'product_id'     => $product->id,
+            'location_id'    => $this->salesPoint->id,
             'type'           => 'in',
             'quantity'       => 10,
-            'reference_type' => ReferenceType::PRODUCTION,
+            'reference_type' => ReferenceType::TRANSFER,
             'reference_id'   => 1,
             'date'           => now(),
         ]);
 
-        $sale = Sale::factory()->create();
+        $sale = Sale::factory()->create([
+            'location_id' => $this->salesPoint->id,
+            'status'      => 'draft',
+        ]);
 
         $sale->items()->create([
-            'product_id'    => $product->id,
-            'quantity'      => 3,
-            'unit_price'    => 10000,
-            'total_price'   => 30000,
+            'product_id'  => $product->id,
+            'quantity'    => 3,
+            'unit_price'  => 10000,
+            'total_price' => 0,
         ]);
 
         // Act
         app(ConfirmSaleService::class)->confirm($sale);
 
-        // Assert: sale item created
+        // Assert: sale item exists
         $this->assertDatabaseHas('sale_items', [
             'sale_id'    => $sale->id,
             'product_id' => $product->id,
             'quantity'   => 3,
         ]);
 
-        // Assert: product transaction OUT created
+        // Assert: product transaction OUT at SALE POINT
         $this->assertDatabaseHas('product_transactions', [
             'product_id'     => $product->id,
+            'location_id'    => $this->salesPoint->id,
             'type'           => 'out',
             'quantity'       => -3,
             'reference_type' => ReferenceType::SALE,
             'reference_id'   => $sale->id,
         ]);
 
-        // Assert: stock reduced correctly (ledger-based)
-        $this->assertEquals(7, $product->stock());
+        // Assert: stock reduced at sale point
+        $this->assertEquals(7, $product->stockAt($this->salesPoint));
     }
 
-    public function test_it_confirms_daily_sale_and_reduces_stock()
+    public function test_it_confirms_daily_sale_and_reduces_stock_at_sale_point()
     {
-        // Arrange: product
+        // Arrange
+        $this->setUpLocations();
+
+        $user = User::factory()->create();
+        $this->assignUserToLocation($user, $this->salesPoint);
+        $this->actingAs($user);
+
         $product = Product::factory()->create();
 
-        // Seed stock via ledger (production result)
+        // Seed stok di SALE POINT
         ProductTransaction::create([
             'product_id'     => $product->id,
+            'location_id'    => $this->salesPoint->id,
             'type'           => 'in',
             'quantity'       => 20,
-            'reference_type' => ReferenceType::PRODUCTION,
+            'reference_type' => ReferenceType::TRANSFER,
             'reference_id'   => 1,
             'date'           => now(),
         ]);
 
-        // Sale harian (draft)
         $sale = Sale::factory()->create([
-            'status' => 'draft',
-            'sale_date'   => now()->toDateString(),
-            'discount' => 0,
-            'tax' => 0,
+            'status'     => 'draft',
+            'sale_date'  => now()->toDateString(),
+            'discount'   => 0,
+            'tax'        => 0,
+            'location_id' => $this->salesPoint->id,
         ]);
 
-        // Sale item (1 produk)
         $sale->items()->create([
             'product_id'  => $product->id,
             'quantity'    => 5,
             'unit_price'  => 10000,
-            'total_price' => 0, // akan dikunci saat confirm
+            'total_price' => 0,
         ]);
 
         // Act
         app(ConfirmSaleService::class)->confirm($sale);
-
         $sale->refresh();
 
-        // Assert: status & total
+        // Assert: sale finalized
         $this->assertEquals('confirmed', $sale->status);
         $this->assertEquals(50000, $sale->subtotal);
         $this->assertEquals(50000, $sale->total);
         $this->assertEquals($sale->sale_date, $sale->sale_date);
 
-        // Assert: product stock reduced via ledger
-        $this->assertEquals(15, $product->stock());
+        // Assert: stock reduced ONLY at sale point
+        $this->assertEquals(15, $product->stockAt($this->salesPoint));
 
-        // Assert: product transaction OUT exists
+        // Assert: ledger entry exists at sale point
         $this->assertDatabaseHas('product_transactions', [
             'product_id'     => $product->id,
+            'location_id'    => $this->salesPoint->id,
             'type'           => 'out',
             'quantity'       => -5,
             'reference_type' => ReferenceType::SALE,

@@ -45,4 +45,11 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function activeLocation()
+    {
+        return $this->hasOne(UserLocationAssignment::class)
+            ->whereNull('active_to')
+            ->latestOfMany();
+    }
 }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Domain\Inventory\ReferenceType;
+use App\Models\Location;
 use App\Models\Production;
 use Illuminate\Support\Facades\DB;
 
@@ -14,7 +15,9 @@ class ProductionService
             throw new \Exception('Production already processed');
         }
 
-        return DB::transaction(function () use ($production) {
+        $central = Location::where('type', 'central')->firstOrFail();
+
+        return DB::transaction(function () use ($production, $central) {
 
             $totalCost = 0;
 
@@ -33,6 +36,7 @@ class ProductionService
             // Product IN
             app(ProductStockService::class)->stockIn(
                 $production->product,
+                $central,
                 $production->output_quantity,
                 ReferenceType::PRODUCTION,
                 $production->id,

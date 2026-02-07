@@ -44,9 +44,12 @@ return new class extends Migration
             $table->timestamp('paid_at')->nullable();
 
             // who input this
-            $table->foreignId('created_by')
+            $table->foreignId('user_id')
                 ->constrained('users')
                 ->cascadeOnDelete();
+            $table->foreignId('location_id')
+                ->constrained('locations')
+                ->restrictOnDelete();
             $table->timestamps();
         });
     }

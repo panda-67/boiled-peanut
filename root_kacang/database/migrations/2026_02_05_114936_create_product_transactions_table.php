@@ -13,19 +13,22 @@ return new class extends Migration
     {
         Schema::create('product_transactions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
+            $table->foreignId('location_id')->constrained('locations')->restrictOnDelete();
+
+            $table->dateTime('date');
+            $table->enum('type', ['in', 'out']);
             $table->decimal('quantity', 15, 3);
 
-            $table->enum('type', ['in', 'out']);
             $table->string('reference_type'); // 'sale', 'production'
             $table->unsignedBigInteger('reference_id');
 
             $table->text('note')->nullable();
-            $table->dateTime('date');
             $table->timestamps();
 
             $table->index(['product_id', 'reference_type']);
             $table->index(['reference_type', 'reference_id']);
+            $table->index(['product_id', 'location_id']);
         });
     }
 

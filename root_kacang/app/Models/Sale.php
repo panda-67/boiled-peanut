@@ -23,7 +23,8 @@ class Sale extends Model
         'payment_status',
         'payment_method',
         'paid_at',
-        'created_by'
+        'user_id',
+        'location_id',
     ];
 
     public function productTransactions(): HasMany
@@ -40,6 +41,11 @@ class Sale extends Model
     public function settlement(): HasOne
     {
         return $this->hasOne(Settlement::class);
+    }
+
+    public function location()
+    {
+        return $this->belongsTo(Location::class);
     }
 
     protected static function booted()

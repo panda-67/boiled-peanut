@@ -26,4 +26,11 @@ class Product extends Model
     {
         return (float) $this->transactions()->sum('quantity');
     }
+
+    public function stockAt(Location $location): float
+    {
+        return (float) $this->transactions()
+            ->where('location_id', $location->id)
+            ->sum('quantity');
+    }
 }

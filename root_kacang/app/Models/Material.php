@@ -26,4 +26,11 @@ class Material extends Model
     {
         return (float) $this->stockMovements()->sum('quantity');
     }
+
+    public function stockAt(Location $location): float
+    {
+        return (float) $this->stockMovements()
+            ->where('location_id', $location->id)
+            ->sum('quantity');
+    }
 }

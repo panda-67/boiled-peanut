@@ -10,6 +10,7 @@ class ProductTransaction extends Model
 {
     protected $fillable = [
         'product_id',
+        'location_id',
         'type',
         'quantity',
         'reference_type',
@@ -38,5 +39,10 @@ class ProductTransaction extends Model
     {
         return $this->belongsTo(Production::class, 'reference_id')
             ->where('reference_type', ReferenceType::PRODUCTION);
+    }
+
+    public function location()
+    {
+        return $this->belongsTo(Location::class);
     }
 }

@@ -10,6 +10,7 @@ class StockMovement extends Model
 {
     protected $fillable = [
         'material_id',
+        'location_id',
         'quantity',
         'type',
         'reference_type',
