@@ -12,6 +12,7 @@ use App\Models\StockMovement;
 use App\Models\User;
 use App\Services\ConfirmSaleService;
 use App\Services\ProductionService;
+use App\Services\ProductTransferService;
 use App\Services\SettlementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -65,27 +66,13 @@ class DailyActivityTest extends TestCase
 
         $this->assertEquals(14, $product->stockAt($this->central));
 
-        // Transfer dari central ke sale point
-        ProductTransaction::create([
-            'product_id'     => $product->id,
-            'location_id'    => $this->central->id,
-            'type'           => 'out',
-            'quantity'       => -5,
-            'reference_type' => ReferenceType::TRANSFER,
-            'reference_id'   => 1,
-            'date'           => now(),
-        ]);
-
-        // Seed stok di SALE POINT (hasil transfer, bukan produksi langsung)
-        ProductTransaction::create([
-            'product_id'     => $product->id,
-            'location_id'    => $this->salesPoint->id,
-            'type'           => 'in',
-            'quantity'       => 5,
-            'reference_type' => ReferenceType::TRANSFER,
-            'reference_id'   => 1,
-            'date'           => now(),
-        ]);
+        // Seed stok di SALE POINT dari CENTRAL (hasil transfer, bukan produksi langsung)
+        app(ProductTransferService::class)->transfer(
+            product: $product,
+            from: $this->central,
+            to: $this->salesPoint,
+            qty: 5
+        );
 
         $this->assertEquals(9, $product->stockAt($this->central));
         $this->assertEquals(5, $product->stockAt($this->salesPoint));
