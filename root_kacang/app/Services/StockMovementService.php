@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use App\Domain\Inventory\ReferenceType;
+use App\Enums\ProductTransactionType;
+use App\Enums\ReferenceType;
 use App\Models\Location;
 use App\Models\Material;
 use App\Models\Production;
@@ -19,7 +20,8 @@ class StockMovementService
             'material_id'    => $material->id,
             'location_id'    => $this->centralLocation()->id,
             'quantity'       => $qty, // POSITIF
-            'type'           => ReferenceType::PURCHASE,
+            'type'           => ProductTransactionType::IN,
+            'reference_type' => ReferenceType::PURCHASE,
             'note'           => $note,
         ]);
     }
@@ -37,7 +39,7 @@ class StockMovementService
             'material_id'    => $material->id,
             'location_id'    => $this->centralLocation()->id,
             'quantity'       => -abs($qty),
-            'type'           => 'out',
+            'type'           => ProductTransactionType::OUT,
             'reference_type' => ReferenceType::PRODUCTION,
             'reference_id'   => $production->id,
             'note'           => 'Material used for production',

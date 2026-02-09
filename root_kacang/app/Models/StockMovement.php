@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Domain\Inventory\ReferenceType;
+use App\Enums\ReferenceType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Inventory\ReferenceType;
+use App\Enums\ReferenceType;
 use App\Models\Material;
 use App\Models\Product;
 use App\Models\Production;

@@ -2,7 +2,8 @@
 
 namespace App\Models;
 
-use App\Domain\Inventory\ReferenceType;
+use App\Enums\ReferenceType;
+use App\Enums\ProductTransactionType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -22,6 +23,8 @@ class ProductTransaction extends Model
     protected $casts = [
         'date' => 'datetime',
         'quantity' => 'decimal:3',
+        'type' => ProductTransactionType::class,
+        'reference_type' => ReferenceType::class,
     ];
 
     public function product(): BelongsTo

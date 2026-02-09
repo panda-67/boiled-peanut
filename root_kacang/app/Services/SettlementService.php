@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\SaleStatus;
 use App\Models\Sale;
 use App\Models\Settlement;
 use Illuminate\Support\Facades\DB;
@@ -10,7 +11,7 @@ class SettlementService
 {
     public function settle(Sale $sale, float $amountReceived): Settlement
     {
-        if ($sale->status !== 'confirmed') {
+        if ($sale->status !== SaleStatus::CONFIRMED) {
             throw new \Exception('Only confirmed sale can be settled');
         }
 
@@ -35,9 +36,8 @@ class SettlementService
                 'method'          => 'warung',
             ]);
 
-            $sale->update([
-                'status' => 'settled',
-            ]);
+            $sale->settle();
+            $sale->save();
 
             return $settlement;
         });

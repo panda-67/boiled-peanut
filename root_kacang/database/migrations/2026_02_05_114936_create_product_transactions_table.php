@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('location_id')->constrained('locations')->restrictOnDelete();
 
             $table->dateTime('date');
-            $table->enum('type', ['in', 'out']);
+            $table->enum('type', ['in', 'out', 'reserve', 'release', 'settle']);
             $table->decimal('quantity', 15, 3);
 
             $table->string('reference_type'); // 'sale', 'production'

@@ -2,9 +2,13 @@
 
 namespace App\Services;
 
+use App\Enums\ProductTransactionType;
+use App\Enums\ReferenceType;
 use App\Models\Location;
 use App\Models\Product;
 use App\Models\ProductTransaction;
+
+use function Symfony\Component\Clock\now;
 
 class ProductStockService
 {
@@ -12,7 +16,8 @@ class ProductStockService
         Product $product,
         Location $location,
         float $qty,
-        string $referenceType,
+        ProductTransactionType $type,
+        ReferenceType $referenceType,
         int $referenceId,
         ?string $note = null
     ): ProductTransaction {
@@ -23,8 +28,29 @@ class ProductStockService
         return ProductTransaction::create([
             'product_id'     => $product->id,
             'location_id'    => $location->id,
-            'type'           => 'in',
+            'type'           => $type,
             'quantity'       => abs($qty),
+            'reference_type' => $referenceType,
+            'reference_id'   => $referenceId,
+            'note'           => $note,
+            'date'           => now(),
+        ]);
+    }
+
+    public function reserve(
+        Product $product,
+        Location $location,
+        int $qty,
+        ProductTransactionType $type,
+        ReferenceType $referenceType,
+        int $referenceId,
+        ?string $note = null
+    ): void {
+        ProductTransaction::create([
+            'product_id'     => $product->id,
+            'location_id'    => $location->id,
+            'type'           => $type,
+            'quantity'       => -$qty, // negatif = terikat
             'reference_type' => $referenceType,
             'reference_id'   => $referenceId,
             'note'           => $note,
@@ -36,7 +62,8 @@ class ProductStockService
         Product $product,
         Location $location,
         float $qty,
-        string $referenceType,
+        ProductTransactionType $type,
+        ReferenceType $referenceType,
         int $referenceId,
         ?string $note = null
     ): ProductTransaction {
@@ -46,7 +73,7 @@ class ProductStockService
         return ProductTransaction::create([
             'product_id'     => $product->id,
             'location_id'    => $location->id,
-            'type'           => 'out',
+            'type'           => $type,
             'quantity'       => -abs($qty),
             'reference_type' => $referenceType,
             'reference_id'   => $referenceId,

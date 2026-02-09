@@ -41,6 +41,7 @@ return new class extends Migration
                 'ewallet',
             ])->nullable();
 
+            $table->timestamp('confirmed_at')->nullable();
             $table->timestamp('paid_at')->nullable();
 
             // who input this

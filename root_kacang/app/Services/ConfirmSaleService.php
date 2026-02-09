@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
-use App\Domain\Inventory\ReferenceType;
+use App\Domain\Guards\StockGuard;
+use App\Enums\ProductTransactionType;
+use App\Enums\ReferenceType;
 use App\Models\Sale;
 use Illuminate\Support\Facades\DB;
 
@@ -10,16 +12,16 @@ class ConfirmSaleService
 {
     public function confirm(Sale $sale): Sale
     {
-        if ($sale->status !== 'draft') {
-            throw new \Exception('Sale cannot be confirmed');
+        if (!$sale->status->canBeConfirmed()) {
+            throw new \DomainException('CONFIRM_SALE_INVALID_STATE');
         }
 
         if ($sale->items->isEmpty()) {
-            throw new \Exception('Sale has no items');
+            throw new \DomainException('SALE_HAS_NO_ITEMS');
         }
 
         if ($sale->productTransactions()->exists()) {
-            throw new \Exception('Sale already confirmed');
+            throw new \DomainException('SALE_ALREADY_CONFIRMED');
         }
 
         return DB::transaction(function () use ($sale) {
@@ -28,34 +30,47 @@ class ConfirmSaleService
 
             foreach ($sale->items as $item) {
                 $product = $item->product;
-                $qty = $item->quantity;
+                $qty     = $item->quantity;
 
-                // 1. Lock line total
+                // 1. Lock line total (masih DRAFT → boleh)
                 $lineTotal = $qty * $item->unit_price;
 
                 $item->update([
                     'total_price' => $lineTotal,
                 ]);
 
-                // 2. Ledger write (ONLY stock mutation) Product OUT
-                app(ProductStockService::class)->stockOut(
+                // 2. Guard stok
+                StockGuard::ensureAvailableForSale(
+                    $product,
+                    $sale->location,
+                    $qty
+                );
+
+                // 3. Ledger write: RESERVE
+                app(ProductStockService::class)->reserve(
                     $product,
                     $sale->location,
                     $qty,
+                    ProductTransactionType::RESERVE,
                     ReferenceType::SALE,
                     $sale->id,
-                    'Product selling'
+                    'Product reserve'
                 );
 
                 $subtotal += $lineTotal;
             }
 
-            // 3. Finalize sale
-            $sale->update([
+            // 4. Lock financial totals (MASIH DRAFT)
+            $sale->fill([
                 'subtotal' => $subtotal,
                 'total'    => $subtotal - $sale->discount + $sale->tax,
-                'status'   => 'confirmed',
             ]);
+
+            $sale->save(); // aman, status masih DRAFT
+
+            // 5. State transition (SATU-SATUNYA TEMPAT)
+            $sale->confirm();
+            $sale->save();
 
             return $sale;
         });

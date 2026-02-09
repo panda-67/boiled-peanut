@@ -2,7 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Inventory\ReferenceType;
+use App\Enums\ReferenceType;
+use App\Enums\SaleStatus;
 use App\Models\Product;
 use App\Models\ProductTransaction;
 use App\Models\Sale;
@@ -70,7 +71,7 @@ class SettlementTest extends TestCase
         ]);
 
         // Assert: sale status updated
-        $this->assertEquals('settled', $sale->status);
+        $this->assertEquals(SaleStatus::SETTLED, $sale->status);
 
         // Assert: settlement relation exists
         $this->assertNotNull($sale->settlement);

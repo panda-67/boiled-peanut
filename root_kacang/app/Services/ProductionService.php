@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use App\Domain\Inventory\ReferenceType;
+use App\Enums\ProductTransactionType;
+use App\Enums\ReferenceType;
 use App\Models\Location;
 use App\Models\Production;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,7 @@ class ProductionService
                 $production->product,
                 $central,
                 $production->output_quantity,
+                ProductTransactionType::IN,
                 ReferenceType::PRODUCTION,
                 $production->id,
                 'Production output'

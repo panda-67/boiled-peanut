@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Inventory\ReferenceType;
+use App\Enums\ProductTransactionType;
+use App\Enums\ReferenceType;
+use App\Enums\SaleStatus;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\ProductTransaction;
@@ -39,7 +41,7 @@ class ConfirmSaleTest extends TestCase
 
         $sale = Sale::factory()->create([
             'location_id' => $this->salesPoint->id,
-            'status'      => 'draft',
+            'status'      => SaleStatus::DRAFT,
         ]);
 
         $sale->items()->create([
@@ -63,14 +65,15 @@ class ConfirmSaleTest extends TestCase
         $this->assertDatabaseHas('product_transactions', [
             'product_id'     => $product->id,
             'location_id'    => $this->salesPoint->id,
-            'type'           => 'out',
+            'type'           => ProductTransactionType::RESERVE,
             'quantity'       => -3,
             'reference_type' => ReferenceType::SALE,
             'reference_id'   => $sale->id,
         ]);
 
-        // Assert: stock reduced at sale point
-        $this->assertEquals(7, $product->stockAt($this->salesPoint));
+        // Assert: stock reduced at sale point by reserve
+        $this->assertEquals(-3, $product->reservedAt($this->salesPoint));
+        $this->assertEquals(7, $product->availableAt($this->salesPoint));
     }
 
     public function test_it_confirms_daily_sale_and_reduces_stock_at_sale_point()
@@ -115,19 +118,20 @@ class ConfirmSaleTest extends TestCase
         $sale->refresh();
 
         // Assert: sale finalized
-        $this->assertEquals('confirmed', $sale->status);
+        $this->assertEquals(SaleStatus::CONFIRMED, $sale->status);
         $this->assertEquals(50000, $sale->subtotal);
         $this->assertEquals(50000, $sale->total);
         $this->assertEquals($sale->sale_date, $sale->sale_date);
 
-        // Assert: stock reduced ONLY at sale point
-        $this->assertEquals(15, $product->stockAt($this->salesPoint));
+        // Assert: stock reduced ONLY at sale point by reserve
+        $this->assertEquals(-5, $product->reservedAt($this->salesPoint));
+        $this->assertEquals(15, $product->availableAt($this->salesPoint));
 
         // Assert: ledger entry exists at sale point
         $this->assertDatabaseHas('product_transactions', [
             'product_id'     => $product->id,
             'location_id'    => $this->salesPoint->id,
-            'type'           => 'out',
+            'type'           => ProductTransactionType::RESERVE,
             'quantity'       => -5,
             'reference_type' => ReferenceType::SALE,
             'reference_id'   => $sale->id,

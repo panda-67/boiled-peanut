@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Inventory\ReferenceType;
+use App\Enums\ReferenceType;
+use App\Enums\SaleStatus;
 use App\Models\Material;
 use App\Models\Product;
 use App\Models\Production;
-use App\Models\ProductTransaction;
 use App\Models\Sale;
 use App\Models\StockMovement;
 use App\Models\User;
@@ -94,8 +94,8 @@ class DailyActivityTest extends TestCase
 
         $sale->refresh();
 
-        $this->assertEquals('confirmed', $sale->status);
-        $this->assertEquals(2, $product->stockAt($this->salesPoint));
+        $this->assertEquals(SaleStatus::CONFIRMED, $sale->status);
+        $this->assertEquals(2, $product->availableAt($this->salesPoint));
         $this->assertEquals(9, $product->stockAt($this->central));
 
         // 4. Settlement
@@ -103,7 +103,7 @@ class DailyActivityTest extends TestCase
 
         $sale->refresh();
 
-        $this->assertEquals('settled', $sale->status);
+        $this->assertEquals(SaleStatus::SETTLED, $sale->status);
 
         // Assert: settlement created
         $this->assertDatabaseHas('settlements', [
