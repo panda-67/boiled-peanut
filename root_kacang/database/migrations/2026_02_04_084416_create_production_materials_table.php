@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('production_materials', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('production_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('production_id')->constrained()->cascadeOnDelete();
             $table->foreignId('material_id')->constrained()->cascadeOnDelete();
 
             $table->decimal('quantity_used', 10, 2);

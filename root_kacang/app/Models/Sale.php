@@ -4,18 +4,20 @@ namespace App\Models;
 
 use App\Enums\ReferenceType;
 use App\Enums\SaleStatus;
+use App\Policies\SalePolicy;
 use DomainException;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-use function Symfony\Component\Clock\now;
-
+#[UsePolicy(SalePolicy::class)]
 class Sale extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'invoice_number',
@@ -112,6 +114,11 @@ class Sale extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    public function businessDay(): BelongsTo
+    {
+        return $this->belongsTo(BusinessDay::class);
     }
 
     protected function allowedDirtyForStateTransition(

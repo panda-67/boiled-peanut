@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('sales', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('invoice_number')->unique();
 
             $table->dateTime('sale_date');
@@ -44,14 +44,19 @@ return new class extends Migration
             $table->timestamp('confirmed_at')->nullable();
             $table->timestamp('paid_at')->nullable();
 
-            // who input this
-            $table->foreignId('user_id')
+            $table->foreignUuid('user_id')
                 ->constrained('users')
                 ->cascadeOnDelete();
             $table->foreignId('location_id')
                 ->constrained('locations')
                 ->restrictOnDelete();
+            $table->foreignId('business_day_id')->nullable()
+                ->constrained('business_days')
+                ->restrictOnDelete();
+
             $table->timestamps();
+
+            $table->index(['business_day_id', 'location_id']);
         });
     }
 

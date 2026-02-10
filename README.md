@@ -94,7 +94,7 @@ DRAFT → CONFIRMED → SETTLED
 
 ### 2. CONFIRMED
 
-Dieksekusi oleh `ConfirmSaleService::confirm()`.
+Dieksekusi oleh `SaleService::confirm()`.
 
 Syarat:
 

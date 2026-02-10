@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('user_location_assignments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('location_id')->constrained()->cascadeOnDelete();
             $table->timestamp('active_from');
             $table->timestamp('active_to')->nullable();

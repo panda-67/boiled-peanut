@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('settlements', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('sale_id')
+            $table->uuid('id')->primary();
+            $table->foreignUuid('sale_id')
                 ->constrained()
                 ->cascadeOnDelete()
                 ->unique(); // 1 sale = 1 settlement (fase sekarang)

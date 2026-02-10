@@ -8,7 +8,7 @@ use App\Enums\ReferenceType;
 use App\Models\Sale;
 use Illuminate\Support\Facades\DB;
 
-class ConfirmSaleService
+class SaleService
 {
     public function confirm(Sale $sale): Sale
     {
@@ -26,6 +26,7 @@ class ConfirmSaleService
 
         return DB::transaction(function () use ($sale) {
 
+            $day = app('activeBusinessDay');
             $subtotal = 0;
 
             foreach ($sale->items as $item) {
@@ -62,8 +63,9 @@ class ConfirmSaleService
 
             // 4. Lock financial totals (MASIH DRAFT)
             $sale->fill([
-                'subtotal' => $subtotal,
-                'total'    => $subtotal - $sale->discount + $sale->tax,
+                'subtotal'        => $subtotal,
+                'total'           => $subtotal - $sale->discount + $sale->tax,
+                'bussines_day_id' => $day->id,
             ]);
 
             $sale->save(); // aman, status masih DRAFT

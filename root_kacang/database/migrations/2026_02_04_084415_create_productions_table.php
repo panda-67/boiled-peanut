@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('productions', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->date('date');
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->decimal('output_quantity', 10, 2);
@@ -22,6 +22,11 @@ return new class extends Migration
                 'completed',
                 'cancelled',
             ])->default('draft');
+
+            $table->foreignId('business_day_id')->nullable()
+                ->constrained('business_days')
+                ->restrictOnDelete();
+
             $table->timestamps();
         });
     }
