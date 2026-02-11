@@ -4,13 +4,14 @@ namespace Tests\Feature;
 
 use App\Enums\ReferenceType;
 use App\Enums\SaleStatus;
+use App\Models\BusinessDay;
 use App\Models\Material;
 use App\Models\Product;
 use App\Models\Production;
 use App\Models\Sale;
 use App\Models\StockMovement;
 use App\Models\User;
-use App\Services\ConfirmSaleService;
+use App\Services\SaleService;
 use App\Services\ProductionService;
 use App\Services\ProductTransferService;
 use App\Services\SettlementService;
@@ -27,9 +28,9 @@ class DailyActivityTest extends TestCase
         // Arrange
         $this->setUpLocations();
 
-        $user = User::factory()->create();
-        $this->assignUserToLocation($user, $this->central);
-        $this->actingAs($user);
+        $manager = User::factory()->create();
+        $this->assignUserToLocation($manager, $this->central);
+
 
         // 1. Product & material
         $product = Product::factory()->create();
@@ -66,6 +67,9 @@ class DailyActivityTest extends TestCase
 
         $this->assertEquals(14, $product->stockAt($this->central));
 
+        $operator = User::factory()->create();
+        $this->assignUserToLocation($operator, $this->salesPoint);
+
         // Seed stok di SALE POINT dari CENTRAL (hasil transfer, bukan produksi langsung)
         app(ProductTransferService::class)->transfer(
             product: $product,
@@ -78,9 +82,12 @@ class DailyActivityTest extends TestCase
         $this->assertEquals(5, $product->stockAt($this->salesPoint));
 
         // 3. Sale (daily order)
-        $sale = Sale::factory()->create([
-            'location_id' => $this->salesPoint->id,
-        ]);
+        $sale = Sale::factory()
+            ->forUser($operator)
+            ->atLocation($this->salesPoint)
+            ->create([
+                'status' => SaleStatus::DRAFT,
+            ]);
 
         $sale->items()->create([
             'product_id' => $product->id,
@@ -90,7 +97,11 @@ class DailyActivityTest extends TestCase
             'total_price' => 30000,
         ]);
 
-        app(ConfirmSaleService::class)->confirm($sale);
+        BusinessDay::factory()
+            ->forLocation($this->salesPoint)
+            ->create(['status' => 'open',]);
+
+        app(SaleService::class)->confirm($sale);
 
         $sale->refresh();
 

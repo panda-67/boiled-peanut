@@ -5,6 +5,6 @@ namespace App\Enums;
 enum LocationType: string
 {
     case CENTRAL = 'central';
-    case SALE_POINT = 'sale_point';
+    case SALE_POINT = 'sales_point';
     case WAREHOUSE = 'warehouse';
 }

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\LocationType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,8 +19,8 @@ class LocationFactory extends Factory
     {
         return [
             'name'      => $this->faker->company,
-            'type'      => 'sales_point',
-            'is_active' => true,
+            'type'      => LocationType::SALE_POINT,
+            'is_active' => 1,
         ];
     }
 
@@ -27,14 +28,14 @@ class LocationFactory extends Factory
     {
         return $this->state(fn() => [
             'name' => 'Central Kitchen',
-            'type' => 'central',
+            'type' => LocationType::CENTRAL,
         ]);
     }
 
     public function salesPoint(): self
     {
         return $this->state(fn() => [
-            'type' => 'sales_point',
+            'type' => LocationType::SALE_POINT,
         ]);
     }
 }

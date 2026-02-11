@@ -5,11 +5,12 @@ namespace Tests\Feature;
 use App\Enums\ProductTransactionType;
 use App\Enums\ReferenceType;
 use App\Enums\SaleStatus;
+use App\Models\BusinessDay;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\ProductTransaction;
 use App\Models\User;
-use App\Services\ConfirmSaleService;
+use App\Services\SaleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,7 +25,6 @@ class ConfirmSaleTest extends TestCase
 
         $user = User::factory()->create();
         $this->assignUserToLocation($user, $this->salesPoint);
-        $this->actingAs($user);
 
         $product = Product::factory()->create();
 
@@ -39,10 +39,12 @@ class ConfirmSaleTest extends TestCase
             'date'           => now(),
         ]);
 
-        $sale = Sale::factory()->create([
-            'location_id' => $this->salesPoint->id,
-            'status'      => SaleStatus::DRAFT,
-        ]);
+        $sale = Sale::factory()
+            ->forUser($user)
+            ->atLocation($this->salesPoint)
+            ->create([
+                'status' => SaleStatus::DRAFT,
+            ]);
 
         $sale->items()->create([
             'product_id'  => $product->id,
@@ -51,8 +53,12 @@ class ConfirmSaleTest extends TestCase
             'total_price' => 0,
         ]);
 
+        BusinessDay::factory()
+            ->forLocation($this->salesPoint)
+            ->create(['status' => 'open',]);
+
         // Act
-        app(ConfirmSaleService::class)->confirm($sale);
+        app(SaleService::class)->confirm($sale);
 
         // Assert: sale item exists
         $this->assertDatabaseHas('sale_items', [
@@ -83,7 +89,6 @@ class ConfirmSaleTest extends TestCase
 
         $user = User::factory()->create();
         $this->assignUserToLocation($user, $this->salesPoint);
-        $this->actingAs($user);
 
         $product = Product::factory()->create();
 
@@ -98,13 +103,15 @@ class ConfirmSaleTest extends TestCase
             'date'           => now(),
         ]);
 
-        $sale = Sale::factory()->create([
-            'status'     => 'draft',
-            'sale_date'  => now()->toDateString(),
-            'discount'   => 0,
-            'tax'        => 0,
-            'location_id' => $this->salesPoint->id,
-        ]);
+        $sale = Sale::factory()
+            ->forUser($user)
+            ->atLocation($this->salesPoint)
+            ->create([
+                'sale_date'  => now()->toDateString(),
+                'status'     => SaleStatus::DRAFT,
+                'discount'   => 0,
+                'tax'        => 0,
+            ]);
 
         $sale->items()->create([
             'product_id'  => $product->id,
@@ -113,8 +120,13 @@ class ConfirmSaleTest extends TestCase
             'total_price' => 0,
         ]);
 
+        BusinessDay::factory()
+            ->forLocation($this->salesPoint)
+            ->onDate(now())
+            ->create();
+
         // Act
-        app(ConfirmSaleService::class)->confirm($sale);
+        app(SaleService::class)->confirm($sale);
         $sale->refresh();
 
         // Assert: sale finalized

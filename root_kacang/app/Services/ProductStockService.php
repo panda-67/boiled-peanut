@@ -18,7 +18,7 @@ class ProductStockService
         float $qty,
         ProductTransactionType $type,
         ReferenceType $referenceType,
-        int $referenceId,
+        string $referenceId,
         ?string $note = null
     ): ProductTransaction {
         if ($qty <= 0) {
@@ -43,7 +43,7 @@ class ProductStockService
         int $qty,
         ProductTransactionType $type,
         ReferenceType $referenceType,
-        int $referenceId,
+        string $referenceId,
         ?string $note = null
     ): void {
         ProductTransaction::create([
@@ -64,7 +64,7 @@ class ProductStockService
         float $qty,
         ProductTransactionType $type,
         ReferenceType $referenceType,
-        int $referenceId,
+        string $referenceId,
         ?string $note = null
     ): ProductTransaction {
         if ($product->stockAt($location) < $qty) {

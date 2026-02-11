@@ -32,6 +32,7 @@ class Sale extends Model
         'paid_at',
         'user_id',
         'location_id',
+        'business_day_id',
     ];
 
     protected $casts = [
@@ -114,6 +115,11 @@ class Sale extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function businessDay(): BelongsTo

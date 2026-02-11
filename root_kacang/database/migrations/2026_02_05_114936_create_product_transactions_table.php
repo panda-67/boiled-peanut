@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('quantity', 15, 3);
 
             $table->string('reference_type'); // 'sale', 'production'
-            $table->unsignedBigInteger('reference_id');
+            $table->uuid('reference_id');
 
             $table->text('note')->nullable();
             $table->timestamps();

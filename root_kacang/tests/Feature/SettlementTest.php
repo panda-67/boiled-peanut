@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ReferenceType;
 use App\Enums\SaleStatus;
+use App\Enums\UserRole;
 use App\Models\Product;
 use App\Models\ProductTransaction;
 use App\Models\Sale;
@@ -22,7 +23,7 @@ class SettlementTest extends TestCase
         // Arrange
         $this->setUpLocations();
 
-        $user = User::factory()->create();
+        $user   = User::factory()->asRole(UserRole::MANAGER)->create();
         $this->assignUserToLocation($user, $this->salesPoint);
         $this->actingAs($user);
 

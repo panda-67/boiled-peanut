@@ -6,12 +6,21 @@ use App\Domain\Guards\StockGuard;
 use App\Enums\ProductTransactionType;
 use App\Enums\ReferenceType;
 use App\Models\Sale;
+use App\Services\Context\ActiveContextResolver;
 use Illuminate\Support\Facades\DB;
 
 class SaleService
 {
+    public function __construct(
+        protected ActiveContextResolver $contextResolver
+    ) {}
+
     public function confirm(Sale $sale): Sale
     {
+        if (!$sale->user) {
+            throw new \DomainException('SALE_HAS_NO_OWNER');
+        }
+
         if (!$sale->status->canBeConfirmed()) {
             throw new \DomainException('CONFIRM_SALE_INVALID_STATE');
         }
@@ -26,7 +35,8 @@ class SaleService
 
         return DB::transaction(function () use ($sale) {
 
-            $day = app('activeBusinessDay');
+            $context = $this->contextResolver->resolveForUser($sale->user);
+
             $subtotal = 0;
 
             foreach ($sale->items as $item) {
@@ -65,7 +75,7 @@ class SaleService
             $sale->fill([
                 'subtotal'        => $subtotal,
                 'total'           => $subtotal - $sale->discount + $sale->tax,
-                'bussines_day_id' => $day->id,
+                'bussines_day_id' => $context->businessDay->id,
             ]);
 
             $sale->save(); // aman, status masih DRAFT

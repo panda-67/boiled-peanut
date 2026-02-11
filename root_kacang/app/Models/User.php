@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -55,15 +56,15 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
-    public function whomActAs(UserRole $role): bool
-    {
-        return $this->role?->code === $role->value;
-    }
-
-    public function activeLocation()
+    public function activeLocation(): HasOne
     {
         return $this->hasOne(UserLocationAssignment::class)
             ->whereNull('active_to')
             ->latestOfMany();
+    }
+
+    public function whomActAs(UserRole $role): bool
+    {
+        return $this->role?->code === $role->value;
     }
 }
