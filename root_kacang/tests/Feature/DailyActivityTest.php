@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ReferenceType;
 use App\Enums\SaleStatus;
+use App\Enums\UserRole;
 use App\Models\BusinessDay;
 use App\Models\Material;
 use App\Models\Product;
@@ -28,7 +29,7 @@ class DailyActivityTest extends TestCase
         // Arrange
         $this->setUpLocations();
 
-        $manager = User::factory()->create();
+        $manager = User::factory()->asRole(UserRole::MANAGER)->create();
         $this->assignUserToLocation($manager, $this->central);
 
 
@@ -67,7 +68,7 @@ class DailyActivityTest extends TestCase
 
         $this->assertEquals(14, $product->stockAt($this->central));
 
-        $operator = User::factory()->create();
+        $operator = User::factory()->asRole(UserRole::OPERATOR)->create();
         $this->assignUserToLocation($operator, $this->salesPoint);
 
         // Seed stok di SALE POINT dari CENTRAL (hasil transfer, bukan produksi langsung)

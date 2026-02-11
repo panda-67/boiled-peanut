@@ -19,11 +19,11 @@ class ResolveUserContext
     {
         $user = Auth::user();
 
-        if (!$user->active_location_id) {
+        if (!$user->activeLocation) {
             abort(403, 'No active location selected');
         }
 
-        if (!BusinessDay::activeFor($user->active_location_id)) {
+        if (!BusinessDay::activeFor($user->activeLocation->location->id)) {
             abort(403, 'No active business day');
         }
         return $next($request);

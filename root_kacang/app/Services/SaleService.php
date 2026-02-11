@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Guards\LocationGuard;
 use App\Domain\Guards\StockGuard;
 use App\Enums\ProductTransactionType;
 use App\Enums\ReferenceType;
@@ -17,9 +18,11 @@ class SaleService
 
     public function confirm(Sale $sale): Sale
     {
-        if (!$sale->user) {
+        if (!$user = $sale->user) {
             throw new \DomainException('SALE_HAS_NO_OWNER');
         }
+
+        LocationGuard::ensureSalePoint($user);
 
         if (!$sale->status->canBeConfirmed()) {
             throw new \DomainException('CONFIRM_SALE_INVALID_STATE');
