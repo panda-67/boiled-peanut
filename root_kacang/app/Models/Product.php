@@ -54,6 +54,6 @@ class Product extends Model
 
     public function availableAt(Location $location): float
     {
-        return $this->stockAt($location) - abs($this->reservedAt($location));
+        return $this->stockAt($location) - $this->reservedAt($location);
     }
 }

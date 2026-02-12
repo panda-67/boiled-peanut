@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\DB;
 
 class SettlementService
 {
+    public function __construct(
+        protected ProductStockService $stockService
+    ) {}
+
     public function settle(Sale $sale, float $amountReceived): Settlement
     {
         if ($sale->status !== SaleStatus::CONFIRMED) {
@@ -35,6 +39,8 @@ class SettlementService
                 'received_at'     => now(),
                 'method'          => 'warung',
             ]);
+
+            $this->stockService->finalizeSale($sale);
 
             $sale->settle();
             $sale->save();

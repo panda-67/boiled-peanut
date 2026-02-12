@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ProductTransactionType;
 use App\Enums\ReferenceType;
 use App\Enums\SaleStatus;
 use App\Enums\UserRole;
@@ -42,32 +43,43 @@ class SettlementTest extends TestCase
         ]);
 
         // Sale confirmed
-        $sale = Sale::factory()->create([
-            'location_id'   => $this->salesPoint->id,
-            'status'        => 'confirmed',
-            'sale_date'     => now()->toDateString(),
-            'subtotal'      => 50000,
-            'total'         => 50000,
-        ]);
+        $sale = Sale::factory()
+            ->atLocation($this->salesPoint)
+            ->forUser($user)
+            ->confirmed()
+            ->create([
+                'sale_date'     => now()->toDateString(),
+                'subtotal'      => 40000,
+                'total'         => 40000,
+            ]);
 
         // Sale item (historical, already confirmed)
         $sale->items()->create([
             'product_id'  => $product->id,
-            'quantity'    => 5,
+            'quantity'    => 4,
             'unit_price'  => 10000,
-            'total_price' => 50000,
+            'total_price' => 40000,
+        ]);
+
+        ProductTransaction::create([
+            'product_id'     => $product->id,
+            'location_id'    => $this->salesPoint->id,
+            'type'           => ProductTransactionType::RESERVE,
+            'quantity'       => 4,
+            'reference_type' => ReferenceType::SALE,
+            'reference_id'   => $sale->id,
+            'date'           => now(),
         ]);
 
         // Act
-        $settlement = app(SettlementService::class)
-            ->settle($sale, 50000);
+        app(SettlementService::class)->settle($sale, 40000);
 
         $sale->refresh();
 
         // Assert: settlement created
         $this->assertDatabaseHas('settlements', [
             'sale_id'         => $sale->id,
-            'amount_received' => 50000,
+            'amount_received' => 40000,
             'method'          => 'warung',
         ]);
 
@@ -77,7 +89,7 @@ class SettlementTest extends TestCase
         // Assert: settlement relation exists
         $this->assertNotNull($sale->settlement);
 
-        // Assert: stock unchanged
-        $this->assertEquals(10, $product->stock());
+        // Assert: stock reduce by 4 from 10
+        $this->assertEquals(6, $product->stockAt($this->salesPoint));
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\ProductTransactionType;
 use App\Enums\ReferenceType;
 use App\Models\Location;
 use App\Models\Product;
@@ -30,7 +29,6 @@ class ProductTransferService
                 $product,
                 $from,
                 $qty,
-                ProductTransactionType::OUT,
                 ReferenceType::TRANSFER,
                 0,
                 $note ?? 'Transfer out'
@@ -40,7 +38,6 @@ class ProductTransferService
                 $product,
                 $to,
                 $qty,
-                ProductTransactionType::IN,
                 ReferenceType::TRANSFER,
                 0,
                 $note ?? 'Transfer in'

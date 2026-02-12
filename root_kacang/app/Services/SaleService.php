@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Domain\Guards\LocationGuard;
 use App\Domain\Guards\StockGuard;
-use App\Enums\ProductTransactionType;
 use App\Enums\ReferenceType;
 use App\Models\Sale;
 use App\Repositories\SaleRepository;
@@ -55,21 +54,13 @@ class SaleService
                     'total_price' => $lineTotal,
                 ]);
 
-                StockGuard::ensureAvailableForSale(
-                    $product,
-                    $sale->location,
-                    $qty
-                );
-
                 // Ledger write: RESERVE
                 app(ProductStockService::class)->reserve(
-                    $product,
-                    $sale->location,
-                    $qty,
-                    ProductTransactionType::RESERVE,
-                    ReferenceType::SALE,
-                    $sale->id,
-                    'Product reserve'
+                    product: $product,
+                    location: $sale->location,
+                    qty: $qty,
+                    referenceType: ReferenceType::SALE,
+                    referenceId: $sale->id,
                 );
 
                 $subtotal += $lineTotal;

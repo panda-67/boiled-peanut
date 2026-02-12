@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\ProductTransactionType;
 use App\Enums\ReferenceType;
 use App\Models\Location;
 use App\Models\Production;
@@ -36,13 +35,12 @@ class ProductionService
 
             // Product IN
             app(ProductStockService::class)->stockIn(
-                $production->product,
-                $central,
-                $production->output_quantity,
-                ProductTransactionType::IN,
-                ReferenceType::PRODUCTION,
-                $production->id,
-                'Production output'
+                product: $production->product,
+                location: $central,
+                qty: $production->output_quantity,
+                referenceType: ReferenceType::PRODUCTION,
+                referenceId: $production->id,
+                note: 'Production output'
             );
 
             $production->update([

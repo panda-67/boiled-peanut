@@ -76,13 +76,13 @@ class ConfirmSaleTest extends TestCase
             'product_id'     => $product->id,
             'location_id'    => $this->salesPoint->id,
             'type'           => ProductTransactionType::RESERVE,
-            'quantity'       => -3,
+            'quantity'       => 3,
             'reference_type' => ReferenceType::SALE,
             'reference_id'   => $sale->id,
         ]);
 
         // Assert: stock reduced at sale point by reserve
-        $this->assertEquals(-3, $product->reservedAt($this->salesPoint));
+        $this->assertEquals(3, $product->reservedAt($this->salesPoint));
         $this->assertEquals(7, $product->availableAt($this->salesPoint));
     }
 
@@ -140,7 +140,7 @@ class ConfirmSaleTest extends TestCase
         $this->assertEquals($sale->sale_date, $sale->sale_date);
 
         // Assert: stock reduced ONLY at sale point by reserve
-        $this->assertEquals(-5, $product->reservedAt($this->salesPoint));
+        $this->assertEquals(5, $product->reservedAt($this->salesPoint));
         $this->assertEquals(15, $product->availableAt($this->salesPoint));
 
         // Assert: ledger entry exists at sale point
@@ -148,7 +148,7 @@ class ConfirmSaleTest extends TestCase
             'product_id'     => $product->id,
             'location_id'    => $this->salesPoint->id,
             'type'           => ProductTransactionType::RESERVE,
-            'quantity'       => -5,
+            'quantity'       => 5,
             'reference_type' => ReferenceType::SALE,
             'reference_id'   => $sale->id,
         ]);
