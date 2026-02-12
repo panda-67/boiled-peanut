@@ -97,7 +97,7 @@ class FinalizeSaleTest extends TestCase
             'date'           => now(),
         ]);
 
-        $sale = Sale::factory()->confirmed()->create([
+        $sale = Sale::factory()->cancelled()->create([
             'location_id' => $this->salesPoint->id,
         ]);
 
@@ -117,7 +117,7 @@ class FinalizeSaleTest extends TestCase
         $this->assertEquals(6, $product->availableAt($this->salesPoint));
 
         // Act
-        app(ProductStockService::class)->releaseSale($sale);
+        app(ProductStockService::class)->releaseReservation($sale);
 
         $product->refresh();
 

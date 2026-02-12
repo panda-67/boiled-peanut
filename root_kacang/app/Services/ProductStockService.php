@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\ProductTransactionType;
 use App\Enums\ReferenceType;
+use App\Enums\SaleStatus;
 use App\Models\Location;
 use App\Models\Product;
 use App\Models\ProductTransaction;
@@ -64,6 +65,7 @@ class ProductStockService
     public function reserve(
         Product $product,
         Location $location,
+        SaleStatus $saleStatus,
         int $qty,
         ReferenceType $referenceType,
         string $referenceId,
@@ -71,6 +73,10 @@ class ProductStockService
     ): void {
         if ($qty <= 0) {
             throw new DomainException('INVALID_RESERVE_QUANTITY');
+        }
+
+        if ($saleStatus !== SaleStatus::DRAFT) {
+            throw new DomainException('SALE_NOT_RESERVABLE');
         }
 
         $exists = ProductTransaction::query()
@@ -114,81 +120,99 @@ class ProductStockService
 
     public function finalizeSale(Sale $sale): void
     {
-        $reserves = ProductTransaction::query()
-            ->where('reference_type', ReferenceType::SALE)
-            ->where('reference_id', $sale->id)
-            ->where('type', ProductTransactionType::RESERVE)
-            ->lockForUpdate()
-            ->get();
-
-        if ($reserves->isEmpty()) {
-            throw new DomainException('NO_RESERVATION_FOUND');
+        if ($sale->status !== SaleStatus::CONFIRMED) {
+            throw new DomainException('SALE_NOT_FINALIZABLE');
         }
 
-        $reserves->each(function ($reserve) use ($sale) {
+        DB::transaction(function () use ($sale) {
 
-            // prevent double finalize
-            $alreadyOut = ProductTransaction::query()
+            $reserves = ProductTransaction::query()
                 ->where('reference_type', ReferenceType::SALE)
                 ->where('reference_id', $sale->id)
-                ->where('product_id', $reserve->product_id)
-                ->where('type', ProductTransactionType::OUT)
-                ->exists();
+                ->where('type', ProductTransactionType::RESERVE)
+                ->where('quantity', '>', 0) // only active reserves
+                ->lockForUpdate()
+                ->get();
 
-            if ($alreadyOut) {
-                throw new DomainException('SALE_ALREADY_FINALIZED');
+            if ($reserves->isEmpty()) {
+                throw new DomainException('NO_ACTIVE_RESERVATION_FOUND');
             }
 
-            // OUT
-            ProductTransaction::create([
-                'product_id'     => $reserve->product_id,
-                'location_id'    => $reserve->location_id,
-                'type'           => ProductTransactionType::OUT,
-                'quantity'       => -$reserve->quantity,
-                'reference_type' => ReferenceType::SALE,
-                'reference_id'   => $sale->id,
-                'note'           => 'Sale finalized',
-                'date'           => now(),
-            ]);
+            $reserves->each(function ($reserve) use ($sale) {
 
-            // Reverse RESERVE
-            ProductTransaction::create([
-                'product_id'     => $reserve->product_id,
-                'location_id'    => $reserve->location_id,
-                'type'           => ProductTransactionType::RESERVE,
-                'quantity'       => -$reserve->quantity,
-                'reference_type' => ReferenceType::SALE,
-                'reference_id'   => $sale->id,
-                'note'           => 'Reserve released',
-                'date'           => now(),
-            ]);
+                // prevent double finalize
+                $alreadyOut = ProductTransaction::query()
+                    ->where('reference_type', ReferenceType::SALE)
+                    ->where('reference_id', $sale->id)
+                    ->where('product_id', $reserve->product_id)
+                    ->where('type', ProductTransactionType::OUT)
+                    ->exists();
+
+                if ($alreadyOut) {
+                    throw new DomainException('SALE_ALREADY_FINALIZED');
+                }
+
+                // OUT
+                ProductTransaction::create([
+                    'product_id'     => $reserve->product_id,
+                    'location_id'    => $reserve->location_id,
+                    'type'           => ProductTransactionType::OUT,
+                    'quantity'       => -$reserve->quantity,
+                    'reference_type' => ReferenceType::SALE,
+                    'reference_id'   => $sale->id,
+                    'note'           => 'Sale finalized',
+                    'date'           => now(),
+                ]);
+
+                // Reverse RESERVE
+                ProductTransaction::create([
+                    'product_id'     => $reserve->product_id,
+                    'location_id'    => $reserve->location_id,
+                    'type'           => ProductTransactionType::RESERVE,
+                    'quantity'       => -$reserve->quantity,
+                    'reference_type' => ReferenceType::SALE,
+                    'reference_id'   => $sale->id,
+                    'note'           => 'Reserve released',
+                    'date'           => now(),
+                ]);
+            });
         });
     }
 
-    public function releaseSale(Sale $sale): void
+    public function releaseReservation(Sale $sale): void
     {
-        $reserves = ProductTransaction::query()
-            ->where('reference_type', ReferenceType::SALE)
-            ->where('reference_id', $sale->id)
-            ->where('type', ProductTransactionType::RESERVE)
-            ->lockForUpdate()
-            ->get();
-
-        if ($reserves->isEmpty()) {
-            return;
+        if (!in_array($sale->status, [
+            SaleStatus::DRAFT,
+            SaleStatus::CANCELLED,
+        ])) {
+            throw new DomainException('SALE_NOT_RELEASABLE');
         }
 
-        $reserves->each(function ($reserve) use ($sale) {
-            ProductTransaction::create([
-                'product_id'     => $reserve->product_id,
-                'location_id'    => $reserve->location_id,
-                'type'           => ProductTransactionType::RESERVE,
-                'quantity'       => -$reserve->quantity,
-                'reference_type' => ReferenceType::SALE,
-                'reference_id'   => $sale->id,
-                'note'           => 'Reserve released (cancel)',
-                'date'           => now(),
-            ]);
+        DB::transaction(function () use ($sale) {
+            $reserves = ProductTransaction::query()
+                ->where('reference_type', ReferenceType::SALE)
+                ->where('reference_id', $sale->id)
+                ->where('type', ProductTransactionType::RESERVE)
+                ->where('quantity', '>', 0) // active only
+                ->lockForUpdate()
+                ->get();
+
+            if ($reserves->isEmpty()) {
+                throw new DomainException('NO_ACTIVE_RESERVATION');
+            }
+
+            $reserves->each(function ($reserve) use ($sale) {
+                ProductTransaction::create([
+                    'product_id'     => $reserve->product_id,
+                    'location_id'    => $reserve->location_id,
+                    'type'           => ProductTransactionType::RESERVE,
+                    'quantity'       => -$reserve->quantity,
+                    'reference_type' => ReferenceType::SALE,
+                    'reference_id'   => $sale->id,
+                    'note'           => 'Reserve released (cancel)',
+                    'date'           => now(),
+                ]);
+            });
         });
     }
 }

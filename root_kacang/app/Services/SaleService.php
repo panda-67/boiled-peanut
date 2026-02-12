@@ -43,7 +43,7 @@ class SaleService
 
             $subtotal = 0;
 
-            foreach ($sale->items as $item) {
+            $sale->items->each(function ($item) use ($sale, &$subtotal) {
                 $product = $item->product;
                 $qty     = $item->quantity;
 
@@ -58,13 +58,14 @@ class SaleService
                 app(ProductStockService::class)->reserve(
                     product: $product,
                     location: $sale->location,
+                    saleStatus: $sale->status,
                     qty: $qty,
                     referenceType: ReferenceType::SALE,
                     referenceId: $sale->id,
                 );
 
                 $subtotal += $lineTotal;
-            }
+            });
 
             // Lock financial totals (MASIH DRAFT)
             $sale->fill([
