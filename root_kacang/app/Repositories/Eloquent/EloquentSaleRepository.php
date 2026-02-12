@@ -44,7 +44,16 @@ class EloquentSaleRepository implements SaleRepository
             $sale = $this->findOrFail($id);
 
             $sale->settle();
+            $sale->save();
+        });
+    }
 
+    public function cancel(string $id): void
+    {
+        DB::transaction(function () use ($id) {
+            $sale = $this->findOrFail($id);
+
+            $sale->cancel();
             $sale->save();
         });
     }

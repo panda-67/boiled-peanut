@@ -181,10 +181,7 @@ class ProductStockService
 
     public function releaseReservation(Sale $sale): void
     {
-        if (!in_array($sale->status, [
-            SaleStatus::DRAFT,
-            SaleStatus::CANCELLED,
-        ])) {
+        if ($sale->status === SaleStatus::CANCELLED) {
             throw new DomainException('SALE_NOT_RELEASABLE');
         }
 

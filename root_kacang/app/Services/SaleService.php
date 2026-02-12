@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Domain\Guards\LocationGuard;
-use App\Domain\Guards\StockGuard;
 use App\Enums\ReferenceType;
 use App\Models\Sale;
 use App\Repositories\SaleRepository;
@@ -14,7 +13,8 @@ class SaleService
 {
     public function __construct(
         protected ActiveContextResolver $contextResolver,
-        protected SaleRepository $repository
+        protected SaleRepository $repository,
+        protected ProductStockService $stockService
     ) {}
 
     public function confirm(Sale $sale): Sale
@@ -55,7 +55,7 @@ class SaleService
                 ]);
 
                 // Ledger write: RESERVE
-                app(ProductStockService::class)->reserve(
+                $this->stockService->reserve(
                     product: $product,
                     location: $sale->location,
                     saleStatus: $sale->status,
@@ -74,12 +74,21 @@ class SaleService
                 'bussines_day_id' => $context->businessDay->id,
             ]);
 
-            $this->repository->save($sale); // aman, status masih DRAFT
+            $this->repository->save($sale);
 
-            // State transition (SATU-SATUNYA TEMPAT)
             $this->repository->confirm($sale->id);
 
             return $sale;
+        });
+    }
+
+    public function cancel(Sale $sale)
+    {
+        DB::transaction(function () use ($sale) {
+
+            $this->repository->cancel($sale->id);
+
+            $this->stockService->releaseReservation($sale);
         });
     }
 }

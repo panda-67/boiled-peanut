@@ -5,12 +5,14 @@ namespace App\Services;
 use App\Enums\SaleStatus;
 use App\Models\Sale;
 use App\Models\Settlement;
+use App\Repositories\Eloquent\EloquentSaleRepository;
 use Illuminate\Support\Facades\DB;
 
 class SettlementService
 {
     public function __construct(
-        protected ProductStockService $stockService
+        protected ProductStockService $stockService,
+        protected EloquentSaleRepository $repository
     ) {}
 
     public function settle(Sale $sale, float $amountReceived): Settlement
@@ -42,8 +44,7 @@ class SettlementService
 
             $this->stockService->finalizeSale($sale);
 
-            $sale->settle();
-            $sale->save();
+            $this->repository->settle($sale->id);
 
             return $settlement;
         });

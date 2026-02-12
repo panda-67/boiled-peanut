@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Enums\ProductTransactionType;
 use App\Enums\ReferenceType;
+use App\Enums\SaleStatus;
 use App\Models\Product;
 use App\Models\Production;
 use App\Models\ProductTransaction;
 use App\Models\Sale;
+use App\Repositories\SaleRepository;
 use App\Services\ProductStockService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -78,7 +80,6 @@ class FinalizeSaleTest extends TestCase
         ]);
     }
 
-
     public function test_cancel_releases_reserve_without_affecting_physical_stock()
     {
         // Arrange
@@ -97,8 +98,9 @@ class FinalizeSaleTest extends TestCase
             'date'           => now(),
         ]);
 
-        $sale = Sale::factory()->cancelled()->create([
-            'location_id' => $this->salesPoint->id,
+        $sale = Sale::factory()->create([
+            'location_id'   => $this->salesPoint->id,
+            'status'        => SaleStatus::CONFIRMED,
         ]);
 
         // Reserve +4
@@ -115,6 +117,8 @@ class FinalizeSaleTest extends TestCase
         $this->assertEquals(10, $product->stockAt($this->salesPoint));
         $this->assertEquals(4, $product->reservedAt($this->salesPoint));
         $this->assertEquals(6, $product->availableAt($this->salesPoint));
+
+        app(SaleRepository::class)->cancel($sale->id);
 
         // Act
         app(ProductStockService::class)->releaseReservation($sale);

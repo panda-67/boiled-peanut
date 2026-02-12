@@ -109,6 +109,9 @@ class Sale extends Model
             [SaleStatus::CONFIRMED, SaleStatus::SETTLED]
             => ['status', 'paid_at'],
 
+            [SaleStatus::CONFIRMED, SaleStatus::CANCELLED]
+            => ['status'],
+
             default
             => [],
         };
@@ -136,6 +139,16 @@ class Sale extends Model
 
         $this->status = SaleStatus::SETTLED;
         $this->paid_at = now();
+    }
+
+    public function cancel(): void
+    {
+        if ($this->status !== SaleStatus::CONFIRMED) {
+            throw new DomainException('CANCEL_INVALID_STATE');
+        }
+
+        $this->isTransitioning = true;
+        $this->status = SaleStatus::CANCELLED;
     }
 
     public function productTransactions(): HasMany

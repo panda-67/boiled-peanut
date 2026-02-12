@@ -15,5 +15,7 @@ interface SaleRepository
 
     public function settle(string $id): void;
 
+    public function cancel(string $id): void;
+
     public function save(Sale $sale): void;
 }
