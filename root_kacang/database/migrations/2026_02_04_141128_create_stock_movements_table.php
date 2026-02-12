@@ -21,7 +21,7 @@ return new class extends Migration
             $table->text('note')->nullable();
 
             $table->string('reference_type')->nullable();
-            $table->unsignedBigInteger('reference_id')->nullable();
+            $table->uuid('reference_id')->nullable();
 
             $table->timestamps();
 

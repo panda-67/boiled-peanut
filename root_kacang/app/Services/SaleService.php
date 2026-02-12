@@ -7,13 +7,15 @@ use App\Domain\Guards\StockGuard;
 use App\Enums\ProductTransactionType;
 use App\Enums\ReferenceType;
 use App\Models\Sale;
+use App\Repositories\SaleRepository;
 use App\Services\Context\ActiveContextResolver;
 use Illuminate\Support\Facades\DB;
 
 class SaleService
 {
     public function __construct(
-        protected ActiveContextResolver $contextResolver
+        protected ActiveContextResolver $contextResolver,
+        protected SaleRepository $repository
     ) {}
 
     public function confirm(Sale $sale): Sale
@@ -46,21 +48,20 @@ class SaleService
                 $product = $item->product;
                 $qty     = $item->quantity;
 
-                // 1. Lock line total (masih DRAFT → boleh)
+                // Lock line total (masih DRAFT → boleh)
                 $lineTotal = $qty * $item->unit_price;
 
                 $item->update([
                     'total_price' => $lineTotal,
                 ]);
 
-                // 2. Guard stok
                 StockGuard::ensureAvailableForSale(
                     $product,
                     $sale->location,
                     $qty
                 );
 
-                // 3. Ledger write: RESERVE
+                // Ledger write: RESERVE
                 app(ProductStockService::class)->reserve(
                     $product,
                     $sale->location,
@@ -74,18 +75,17 @@ class SaleService
                 $subtotal += $lineTotal;
             }
 
-            // 4. Lock financial totals (MASIH DRAFT)
+            // Lock financial totals (MASIH DRAFT)
             $sale->fill([
                 'subtotal'        => $subtotal,
                 'total'           => $subtotal - $sale->discount + $sale->tax,
                 'bussines_day_id' => $context->businessDay->id,
             ]);
 
-            $sale->save(); // aman, status masih DRAFT
+            $this->repository->save($sale); // aman, status masih DRAFT
 
-            // 5. State transition (SATU-SATUNYA TEMPAT)
-            $sale->confirm();
-            $sale->save();
+            // State transition (SATU-SATUNYA TEMPAT)
+            $this->repository->confirm($sale->id);
 
             return $sale;
         });

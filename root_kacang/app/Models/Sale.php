@@ -33,11 +33,14 @@ class Sale extends Model
         'user_id',
         'location_id',
         'business_day_id',
+        'status'
     ];
 
     protected $casts = [
         'status' => SaleStatus::class,
     ];
+
+    protected bool $isTransitioning = false;
 
     protected array $guardIgnoredDirty = [
         'updated_at',
@@ -45,7 +48,21 @@ class Sale extends Model
 
     protected static function booted()
     {
-        static::updating(function (Sale $sale) {
+        parent::booted();
+
+        static::saving(function (Sale $sale) {
+
+            if (!$sale->exists) {
+                return;
+            }
+
+            if ($sale->isDirty('status') && !$sale->isTransitioning) {
+                throw new DomainException('STATUS_MUST_BE_CHANGED_VIA_DOMAIN_METHOD');
+            }
+
+            if (!$sale->isDirty('status') && $sale->status !== SaleStatus::DRAFT) {
+                throw new DomainException('SALE_IMMUTABLE_AFTER_CONFIRM');
+            }
 
             $from = $sale->getOriginal('status');
             $to   = $sale->status;
@@ -74,6 +91,27 @@ class Sale extends Model
                 throw new DomainException('SALE_IMMUTABLE_AFTER_CONFIRM');
             }
         });
+
+        static::saved(function (Sale $sale) {
+            $sale->isTransitioning = false;
+        });
+    }
+
+    protected function allowedDirtyForStateTransition(
+        SaleStatus $from,
+        SaleStatus $to
+    ): array {
+        return match ([$from, $to]) {
+
+            [SaleStatus::DRAFT, SaleStatus::CONFIRMED]
+            => ['status', 'confirmed_at'],
+
+            [SaleStatus::CONFIRMED, SaleStatus::SETTLED]
+            => ['status', 'paid_at'],
+
+            default
+            => [],
+        };
     }
 
     public function confirm(): void
@@ -81,6 +119,8 @@ class Sale extends Model
         if ($this->status !== SaleStatus::DRAFT) {
             throw new DomainException('CONFIRM_SALE_INVALID_STATE');
         }
+
+        $this->isTransitioning = true;
 
         $this->status = SaleStatus::CONFIRMED;
         $this->confirmed_at = now();
@@ -91,6 +131,8 @@ class Sale extends Model
         if ($this->status !== SaleStatus::CONFIRMED) {
             throw new DomainException('SETTLE_INVALID_STATE');
         }
+
+        $this->isTransitioning = true;
 
         $this->status = SaleStatus::SETTLED;
         $this->paid_at = now();
@@ -125,22 +167,5 @@ class Sale extends Model
     public function businessDay(): BelongsTo
     {
         return $this->belongsTo(BusinessDay::class);
-    }
-
-    protected function allowedDirtyForStateTransition(
-        SaleStatus $from,
-        SaleStatus $to
-    ): array {
-        return match (true) {
-            $from === SaleStatus::DRAFT
-                && $to === SaleStatus::CONFIRMED
-            => ['status', 'confirmed_at'],
-
-            $from === SaleStatus::CONFIRMED
-                && $to === SaleStatus::SETTLED
-            => ['status', 'paid_at'],
-
-            default => [],
-        };
     }
 }

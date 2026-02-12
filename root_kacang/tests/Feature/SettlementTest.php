@@ -43,11 +43,11 @@ class SettlementTest extends TestCase
 
         // Sale confirmed
         $sale = Sale::factory()->create([
-            'location_id' => $this->salesPoint->id,
-            'status'   => 'confirmed',
+            'location_id'   => $this->salesPoint->id,
+            'status'        => 'confirmed',
             'sale_date'     => now()->toDateString(),
-            'subtotal' => 50000,
-            'total'    => 50000,
+            'subtotal'      => 50000,
+            'total'         => 50000,
         ]);
 
         // Sale item (historical, already confirmed)

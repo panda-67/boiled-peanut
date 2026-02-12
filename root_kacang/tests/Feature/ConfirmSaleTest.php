@@ -2,14 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Sales\Data\CreateSaleData;
 use App\Enums\ProductTransactionType;
 use App\Enums\ReferenceType;
 use App\Enums\SaleStatus;
 use App\Models\BusinessDay;
 use App\Models\Product;
-use App\Models\Sale;
 use App\Models\ProductTransaction;
 use App\Models\User;
+use App\Repositories\SaleRepository;
 use App\Services\SaleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -39,12 +40,15 @@ class ConfirmSaleTest extends TestCase
             'date'           => now(),
         ]);
 
-        $sale = Sale::factory()
-            ->forUser($user)
-            ->atLocation($this->salesPoint)
-            ->create([
-                'status' => SaleStatus::DRAFT,
-            ]);
+        $data = CreateSaleData::draft(
+            invoiceNumber: 'INV-TEST-001',
+            userId: $user->id,
+            locationId: $this->salesPoint->id,
+            businessDayId: null,
+        );
+
+        $repo = app(SaleRepository::class);
+        $sale = $repo->createDraft($data);
 
         $sale->items()->create([
             'product_id'  => $product->id,
@@ -103,15 +107,15 @@ class ConfirmSaleTest extends TestCase
             'date'           => now(),
         ]);
 
-        $sale = Sale::factory()
-            ->forUser($user)
-            ->atLocation($this->salesPoint)
-            ->create([
-                'sale_date'  => now()->toDateString(),
-                'status'     => SaleStatus::DRAFT,
-                'discount'   => 0,
-                'tax'        => 0,
-            ]);
+        $data = CreateSaleData::draft(
+            invoiceNumber: 'INV-TEST-001',
+            userId: $user->id,
+            locationId: $this->salesPoint->id,
+            businessDayId: null,
+        );
+
+        $repo = app(SaleRepository::class);
+        $sale = $repo->createDraft($data);
 
         $sale->items()->create([
             'product_id'  => $product->id,
