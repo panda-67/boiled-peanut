@@ -23,15 +23,12 @@ class BusinessDay extends Model
         'opened_by',
         'closed_at',
         'closed_by',
-        'settled_at',
-        'settled_by',
     ];
 
     protected $casts = [
         'date' => 'date',
         'opened_at' => 'datetime',
         'closed_at' => 'datetime',
-        'settled_at' => 'datetime',
     ];
 
     public function location(): BelongsTo
@@ -47,11 +44,6 @@ class BusinessDay extends Model
     public function closedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'closed_by');
-    }
-
-    public function settledBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'settled_by');
     }
 
     public function sales(): HasMany
@@ -72,11 +64,6 @@ class BusinessDay extends Model
     public function isClosed(): bool
     {
         return $this->status === 'closed';
-    }
-
-    public function isSettled(): bool
-    {
-        return !is_null($this->settled_at);
     }
 
     public function isBalanced(): bool

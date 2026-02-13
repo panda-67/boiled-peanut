@@ -6,6 +6,7 @@ use App\Enums\SaleStatus;
 use App\Models\Sale;
 use App\Models\Settlement;
 use App\Repositories\Eloquent\EloquentSaleRepository;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 
 class SettlementService
@@ -17,23 +18,21 @@ class SettlementService
 
     public function settle(Sale $sale, float $amountReceived): Settlement
     {
-        if ($sale->status !== SaleStatus::CONFIRMED) {
-            throw new \Exception('Only confirmed sale can be settled');
-        }
-
-        if ($sale->settlement()->exists()) {
-            throw new \Exception('Sale already settled');
-        }
-
-        if ($amountReceived <= 0) {
-            throw new \Exception('Invalid settlement amount');
-        }
-
-        if ($amountReceived != $sale->total) {
-            throw new \Exception('Settlement amount must match sale total');
-        }
-
         return DB::transaction(function () use ($sale, $amountReceived) {
+
+            $sale = Sale::whereKey($sale->id)->lockForUpdate()->firstOrFail();
+
+            if ($sale->status !== SaleStatus::CONFIRMED) {
+                throw new DomainException('SALE_NOT_CONFIRMABLE_FOR_SETTLEMENT');
+            }
+
+            if ($sale->settlement()->exists()) {
+                throw new DomainException('SALE_ALREADY_SETTLED');
+            }
+
+            if (bccomp($amountReceived, $sale->total, 2) !== 0) {
+                throw new DomainException('INVALID_SETTLEMENT_AMOUNT');
+            }
 
             $settlement = Settlement::create([
                 'sale_id'         => $sale->id,

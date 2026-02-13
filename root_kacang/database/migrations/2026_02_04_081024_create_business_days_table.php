@@ -25,12 +25,17 @@ return new class extends Migration
             $table->timestamp('closed_at')->nullable();
             $table->foreignUuid('closed_by')->nullable()->constrained('users');
 
-            $table->timestamp('settled_at')->nullable();
-            $table->foreignUuid('settled_by')->nullable()->constrained('users');
-
             $table->timestamps();
 
+            // Hindari duplikasi tanggal per location
             $table->unique(['location_id', 'date']);
+
+            // Generated column untuk menjamin hanya satu OPEN per location
+            $table->unsignedBigInteger('open_location_lock')
+                ->nullable()
+                ->storedAs("CASE WHEN status = 'open' THEN location_id ELSE NULL END");
+
+            $table->unique('open_location_lock');
         });
     }
 

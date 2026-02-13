@@ -4,28 +4,28 @@ namespace App\Services\Context;
 
 use App\Models\BusinessDay;
 use App\Models\User;
+use DomainException;
 
 class ActiveContextResolver
 {
     public function resolveForUser(User $user): ActiveContext
     {
         if (!$user->activeLocation) {
-            throw new \DomainException('USER_HAS_NO_ACTIVE_LOCATION');
+            throw new DomainException('USER_HAS_NO_ACTIVE_LOCATION');
         }
 
-        if (!$user->activeLocation->location->is_active) {
-            throw new \DomainException('LOCATION_INACTIVE');
+        $location = $user->activeLocation->location;
+
+        if (!$location->is_active) {
+            throw new DomainException('LOCATION_INACTIVE');
         }
 
-        $businessDay = BusinessDay::activeFor($user->activeLocation->location->id);
+        $businessDay = BusinessDay::activeFor($location->id);
 
         if (!$businessDay) {
-            throw new \DomainException('NO_ACTIVE_BUSINESS_DAY');
+            throw new DomainException('NO_ACTIVE_BUSINESS_DAY');
         }
 
-        return new ActiveContext(
-            $user->activeLocation->id,
-            $businessDay
-        );
+        return new ActiveContext($location, $businessDay);
     }
 }

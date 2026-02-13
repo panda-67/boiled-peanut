@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Domain\Guards\LocationGuard;
 use App\Enums\ReferenceType;
+use App\Models\BusinessDay;
 use App\Models\Sale;
 use App\Repositories\SaleRepository;
 use App\Services\Context\ActiveContextResolver;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 
 class SaleService
@@ -19,31 +21,45 @@ class SaleService
 
     public function confirm(Sale $sale): Sale
     {
-        if (!$user = $sale->user) {
-            throw new \DomainException('SALE_HAS_NO_OWNER');
-        }
-
-        LocationGuard::ensureSalePoint($user);
-
-        if (!$sale->status->canBeConfirmed()) {
-            throw new \DomainException('CONFIRM_SALE_INVALID_STATE');
-        }
-
-        if ($sale->items->isEmpty()) {
-            throw new \DomainException('SALE_HAS_NO_ITEMS');
-        }
-
-        if ($sale->productTransactions()->exists()) {
-            throw new \DomainException('SALE_ALREADY_CONFIRMED');
-        }
-
         return DB::transaction(function () use ($sale) {
 
             $context = $this->contextResolver->resolveForUser($sale->user);
 
+            $sale = Sale::whereKey($sale->id)->lockForUpdate()->first();
+
+            $businessDay = BusinessDay::whereKey($context->businessDay->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$user = $sale->user) {
+                throw new DomainException('SALE_HAS_NO_OWNER');
+            }
+
+            LocationGuard::ensureSalePoint($user);
+
+            if (!$sale->status->canBeConfirmed()) {
+                throw new DomainException('CONFIRM_SALE_INVALID_STATE');
+            }
+
+            if ($sale->items->isEmpty()) {
+                throw new DomainException('SALE_HAS_NO_ITEMS');
+            }
+
+            if ($sale->productTransactions()->exists()) {
+                throw new DomainException('SALE_ALREADY_CONFIRMED');
+            }
+
+            if ($sale->location_id !== $context->location->id) {
+                throw new DomainException('SALE_LOCATION_MISMATCH');
+            }
+
+            if ($businessDay->status !== 'open') {
+                throw new DomainException('BUSINESS_DAY_ALREADY_CLOSED');
+            }
+
             $subtotal = 0;
 
-            $sale->items->each(function ($item) use ($sale, &$subtotal) {
+            $sale->items->each(function ($item) use ($context, $sale, &$subtotal) {
                 $product = $item->product;
                 $qty     = $item->quantity;
 
@@ -57,7 +73,7 @@ class SaleService
                 // Ledger write: RESERVE
                 $this->stockService->reserve(
                     product: $product,
-                    location: $sale->location,
+                    location: $context->location,
                     saleStatus: $sale->status,
                     qty: $qty,
                     referenceType: ReferenceType::SALE,
