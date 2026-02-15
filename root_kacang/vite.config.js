@@ -6,7 +6,7 @@ export default defineConfig({
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.js'],
-            hotFile: '../public_kacang/hot',
+            hotFile: '../public_html/kacang/hot',
             refresh: true,
         }),
         tailwindcss(),
