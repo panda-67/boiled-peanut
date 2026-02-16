@@ -57,10 +57,5 @@
 | Create / edit users  | ✓  | ✓     | ✗       | ✗        | ✗         |
 | Assign roles         | ✓  | ✓*    | ✗       | ✗        | ✗         |
 | System configuration | ✓  | ✗     | ✗       | ✗        | ✗         |
-| Action               | SU | OWNER | MANAGER | OPERATOR | SPECTATOR |
-| -------------------- | -- | ----- | ------- | -------- | --------- |
-| Create / edit users  | ✓  | ✓     | ✗       | ✗        | ✗         |
-| Assign roles         | ✓  | ✓*    | ✗       | ✗        | ✗         |
-| System configuration | ✓  | ✗     | ✗       | ✗        | ✗         |
 
 * OWNER tidak boleh assign SU.
