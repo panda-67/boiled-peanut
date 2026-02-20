@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Location;
 use App\Models\Sale;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -13,6 +14,10 @@ class SaleSeeder extends Seeder
      */
     public function run(): void
     {
-        Sale::factory()->count(20)->create();
+        $store = Location::firstWhere('name', 'Main Store');
+        $secondStore = Location::firstWhere('name', 'Second Store');
+
+        Sale::factory()->atLocation($store)->create();
+        Sale::factory()->atLocation($secondStore)->create();
     }
 }

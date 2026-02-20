@@ -5,16 +5,17 @@ set -euo pipefail
 # CONFIG
 ###############################################################################
 # FTP credentials
-FTP_KACANG_USER="kacang@app.notivra.com"
-FTP_PUBLIC_KACANG_USER="kacang-fe@app.notivra.com"
+FTP_KACANG_USER="kacang@api.notivra.com"
+FTP_PUBLIC_KACANG_USER="frontend@api.notivra.com"
+FTP_PUBLIC_APP_KACANG_USER="frontend@app.notivra.com"
 
 FTP_HOST="ftp.notivra.com"
 FTP_DIR="/"
 
 # Local directories
 DIR_KACANG="root_kacang"
-DIR_KACANG_FE="../kacang-frontend"
 DIR_PUBLIC_KACANG="public_html/kacang"
+DIR_KACANG_APP="../kacang-frontend"
 
 ###############################################################################
 # Functions
@@ -49,14 +50,10 @@ ftp_mirror() {
       --exclude-glob=.git \
       --exclude-glob=.github \
       --exclude-glob=*.log \
-      --exclude-glob=storage/logs/*
-      --exclude-glob=storage/framework/cache/*
-      --exclude-glob=storage/framework/sessions/*
-      --exclude-glob=storage/framework/views/*
       --exclude=node_modules \
       --exclude=.env \
+      --exclude=.env.testing \
       --exclude=tests \
-      --exclude=storage/logs \
       --exclude=notivra/ \
       --exclude=staging/ \
       --exclude=samsulmuarrif.my.id \
@@ -71,8 +68,8 @@ ftp_mirror() {
 clear
 echo "📦 Kacang FTP Deploy"
 echo "-----------------------------------------"
-echo "1) Deploy root_kacang (FTP)"
-echo "2) Deploy public_html/kacang (FTP)"
+echo "1) Deploy API kacang (FTP)"
+echo "2) Deploy app kacang (FTP)"
 echo "q) Quit"
 echo "-----------------------------------------"
 read -rp "Select an option: " choice
@@ -83,22 +80,31 @@ case "$choice" in
 	cd "$DIR_KACANG"
 	composer install --no-dev --optimize-autoloader --classmap-authoritative
 	php artisan optimize:clear
-	cd - >/dev/null
 
 	echo "🚀 Uploading kacang..."
-	ftp_mirror "$DIR_KACANG" "$FTP_HOST" "$FTP_KACANG_USER" "$FTP_KACANG_PASS" "$FTP_DIR"
+	ftp_mirror "." "$FTP_HOST" "$FTP_KACANG_USER" "$FTP_KACANG_PASS" "$FTP_DIR"
 	echo "✅ FTP upload kacang completed."
-	;;
-2)
-	ask_password FTP_PUBLIC_KACANG_PASS "$FTP_PUBLIC_KACANG_USER"
-	echo "📦 Buliding frontend."
-	cd "$DIR_KACANG_FE"
-	pnpm run deploy
 	cd - >/dev/null
 
 	echo "🚀 Uploading public kacang..."
-	ftp_mirror "$DIR_PUBLIC_KACANG" "$FTP_HOST" "$FTP_PUBLIC_KACANG_USER" "$FTP_PUBLIC_KACANG_PASS" "$FTP_DIR"
+	cd "$DIR_PUBLIC_KACANG"
+	ftp_mirror "." "$FTP_HOST" "$FTP_PUBLIC_KACANG_USER" "$FTP_KACANG_PASS" "$FTP_DIR"
+	cd - >/dev/null
+
 	echo "✅ FTP upload public kacang completed."
+
+	;;
+2)
+	ask_password FTP_PUBLIC_APP_KACANG_PASS "$FTP_PUBLIC_APP_KACANG_USER"
+	echo "📦 Buliding app kacang frontend."
+	cd "$DIR_KACANG_APP"
+	pnpm run build
+
+	echo "🚀 Uploading app kacang..."
+	ftp_mirror "./out/" "$FTP_HOST" "$FTP_PUBLIC_APP_KACANG_USER" "$FTP_PUBLIC_APP_KACANG_PASS" "$FTP_DIR"
+	cd - >/dev/null
+
+	echo "✅ FTP upload app kacang completed."
 	;;
 q | Q)
 	echo "👋 Cancelled."

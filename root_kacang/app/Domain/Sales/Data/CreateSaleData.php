@@ -55,7 +55,7 @@ final class CreateSaleData
             discount: $discount,
             tax: $tax,
             total: $total,
-            paymentStatus: 'paid',
+            paymentStatus: null,
             paymentMethod: $paymentMethod,
             userId: $userId,
             locationId: $locationId,

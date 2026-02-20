@@ -11,20 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sale_items', function (Blueprint $table) {
+        Schema::create('manager_active_locations', function (Blueprint $table) {
             $table->id();
-            $table->foreignUuid('sale_id')
-                ->constrained()
-                ->cascadeOnDelete();
 
-            $table->foreignId('product_id')
+            $table->foreignUuid('user_id')
+                ->constrained()
+                ->cascadeOnDelete()
+                ->unique(); // one active context per manager
+
+            $table->foreignId('location_id')
                 ->constrained()
                 ->restrictOnDelete();
 
-            $table->decimal('quantity', 9, 2);
-            $table->decimal('unit_price', 15, 2);
-            $table->decimal('total_price', 15, 2);
             $table->timestamps();
+
+            $table->index('location_id');
         });
     }
 
@@ -33,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sale_items');
+        Schema::dropIfExists('manager_active_locations');
     }
 };

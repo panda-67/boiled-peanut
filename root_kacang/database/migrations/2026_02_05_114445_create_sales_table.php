@@ -40,22 +40,22 @@ return new class extends Migration
             $table->index(['business_day_id', 'location_id']);
         });
 
-        DB::unprepared("
-            CREATE TRIGGER sale_transition_guard
-            BEFORE UPDATE ON sales
-            FOR EACH ROW
-            BEGIN
-                IF OLD.status = 'draft' AND NEW.status = 'settled' THEN
-                    SIGNAL SQLSTATE '45000'
-                    SET MESSAGE_TEXT = 'INVALID_STATE_TRANSITION';
-                END IF;
-
-                IF OLD.status = 'confirmed' AND NEW.status = 'draft' THEN
-                    SIGNAL SQLSTATE '45000'
-                    SET MESSAGE_TEXT = 'INVALID_STATE_TRANSITION';
-                END IF;
-            END
-        ");
+        /* DB::unprepared(" */
+        /*     CREATE TRIGGER sale_transition_guard */
+        /*     BEFORE UPDATE ON sales */
+        /*     FOR EACH ROW */
+        /*     BEGIN */
+        /*         IF OLD.status = 'draft' AND NEW.status = 'settled' THEN */
+        /*             SIGNAL SQLSTATE '45000' */
+        /*             SET MESSAGE_TEXT = 'INVALID_STATE_TRANSITION'; */
+        /*         END IF; */
+        /**/
+        /*         IF OLD.status = 'confirmed' AND NEW.status = 'draft' THEN */
+        /*             SIGNAL SQLSTATE '45000' */
+        /*             SET MESSAGE_TEXT = 'INVALID_STATE_TRANSITION'; */
+        /*         END IF; */
+        /*     END */
+        /* "); */
     }
 
     /**
@@ -64,6 +64,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('sales');
-        DB::unprepared("DROP TRIGGER IF EXISTS sale_transition_guard");
+        /* DB::unprepared("DROP TRIGGER IF EXISTS sale_transition_guard"); */
     }
 };

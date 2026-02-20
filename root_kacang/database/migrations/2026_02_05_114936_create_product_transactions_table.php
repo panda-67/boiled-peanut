@@ -28,6 +28,7 @@ return new class extends Migration
 
             $table->index(['product_id', 'reference_type']);
             $table->index(['reference_type', 'reference_id']);
+            $table->index(['product_id', 'location_id', 'type']);
             $table->index(['product_id', 'location_id']);
         });
     }

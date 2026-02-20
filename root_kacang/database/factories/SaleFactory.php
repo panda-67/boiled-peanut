@@ -17,7 +17,7 @@ class SaleFactory extends Factory
     {
         return [
             'invoice_number' => 'INV-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
-            'sale_date'      => now(),
+            'sale_date'      => today(),
             'subtotal'       => 0,
             'total'          => 0,
             'status'         => SaleStatus::DRAFT,
