@@ -43,11 +43,16 @@ class CancelSaleTest extends TestCase
             'date'           => now(),
         ]);
 
+        $businessDay = BusinessDay::factory()
+            ->forLocation($this->salesPoint)
+            ->onDate(now())
+            ->create();
+
         $data = CreateSaleData::draft(
             invoiceNumber: 'INV-TEST-001',
             userId: $user->id,
             locationId: $this->salesPoint->id,
-            businessDayId: null,
+            businessDayId: $businessDay->id,
         );
 
         $repo = app(SaleRepository::class);
@@ -59,11 +64,6 @@ class CancelSaleTest extends TestCase
             'unit_price'  => 10000,
             'total_price' => 0,
         ]);
-
-        BusinessDay::factory()
-            ->forLocation($this->salesPoint)
-            ->onDate(now())
-            ->create();
 
         // Act
         app(SaleService::class)->confirm($sale);

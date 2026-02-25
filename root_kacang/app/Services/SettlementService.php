@@ -2,9 +2,7 @@
 
 namespace App\Services;
 
-use App\Enums\SaleStatus;
 use App\Models\Sale;
-use App\Models\Settlement;
 use App\Repositories\Eloquent\EloquentSaleRepository;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -13,39 +11,56 @@ class SettlementService
 {
     public function __construct(
         protected ProductStockService $stockService,
-        protected EloquentSaleRepository $repository
+        protected EloquentSaleRepository $repository,
+        protected BusinessDayService $business
     ) {}
 
-    public function settle(Sale $sale, float $amountReceived): Settlement
+    public function settle(Sale $sale, float $amountReceived): Sale
     {
         return DB::transaction(function () use ($sale, $amountReceived) {
 
-            $sale = Sale::whereKey($sale->id)->lockForUpdate()->firstOrFail();
+            /** @var \App\Models\Sale $sale */
+            $sale = Sale::whereKey($sale->id)
+                ->with(['user:id', 'location:id', 'businessDay'])
+                ->lockForUpdate()
+                ->firstOrFail();
 
-            if ($sale->status !== SaleStatus::CONFIRMED) {
-                throw new DomainException('SALE_NOT_CONFIRMABLE_FOR_SETTLEMENT');
+            if ($sale->businessDay->isClosed()) {
+                throw new DomainException('Business day is closed.');
+            }
+
+            if (! $sale->status->canBeSettled()) {
+                throw new DomainException('Sale is not confirmed.');
             }
 
             if ($sale->settlement()->exists()) {
-                throw new DomainException('SALE_ALREADY_SETTLED');
+                throw new DomainException('Sale already settled.');
             }
 
             if (bccomp($amountReceived, $sale->total, 2) !== 0) {
-                throw new DomainException('INVALID_SETTLEMENT_AMOUNT');
+                throw new DomainException('Invalid settlement amount.');
             }
 
-            $settlement = Settlement::create([
-                'sale_id'         => $sale->id,
+            $sale->settlement()->create([
                 'amount_received' => $amountReceived,
                 'received_at'     => now(),
                 'method'          => 'warung',
             ]);
 
+            $sale->fill([
+                'payment_status'  => 'paid',
+                'payment_method'  => 'warung'
+            ]);
+
+            $this->repository->save($sale);
+
             $this->stockService->finalizeSale($sale);
 
             $this->repository->settle($sale->id);
 
-            return $settlement;
+            $this->business->close($sale->location->id, $sale->user->id);
+
+            return $sale->fresh(['settlement']);
         });
     }
 }

@@ -82,6 +82,10 @@ class DailyActivityTest extends TestCase
         $this->assertEquals(9, $product->stockAt($this->central));
         $this->assertEquals(5, $product->stockAt($this->salesPoint));
 
+        $businessDay = BusinessDay::factory()
+            ->forLocation($this->salesPoint)
+            ->create(['status' => 'open',]);
+
         // 3. Sale (daily order)
         $sale = Sale::factory()
             ->forUser($operator)
@@ -89,6 +93,9 @@ class DailyActivityTest extends TestCase
             ->create([
                 'status' => SaleStatus::DRAFT,
             ]);
+
+        $sale->fill(['business_day_id' => $businessDay->id]);
+        $sale->save();
 
         $sale->items()->create([
             'product_id' => $product->id,
@@ -98,9 +105,7 @@ class DailyActivityTest extends TestCase
             'total_price' => 30000,
         ]);
 
-        BusinessDay::factory()
-            ->forLocation($this->salesPoint)
-            ->create(['status' => 'open',]);
+        $this->recalculateTotals($sale);
 
         app(SaleService::class)->confirm($sale);
 

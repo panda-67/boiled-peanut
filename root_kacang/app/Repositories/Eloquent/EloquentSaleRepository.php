@@ -8,41 +8,44 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\User;
 use App\Repositories\SaleRepository;
-use App\Services\Context\ActiveContextResolver;
+use App\Services\Context\ActiveContext;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class EloquentSaleRepository implements SaleRepository
 {
-    public function __construct(
-        protected ActiveContextResolver $contextResolver
-    ) {}
-
     public function findToday(User $user): ?Sale
     {
-        $context = $this->contextResolver->resolveForUser($user);
-        $locationId = $context->location->id;
+        $locationId = $user->location->id;
 
-        return Sale::with('items.product')
-            ->where('sale_date', now()->toDateString())
-            ->where('location_id', $locationId)
+        return Sale::where('location_id', $locationId)
+            ->whereBetween('sale_date', [
+                now()->startOfDay(),
+                now()->endOfDay(),
+            ])
             ->whereIn('status', [
                 SaleStatus::DRAFT,
                 SaleStatus::CONFIRMED,
                 SaleStatus::SETTLED,
             ])
+            ->with('items.product')
             ->latest('id')
             ->first();
     }
 
-    public function startToday(User $user): Sale
+    public function startToday(User $user, ActiveContext $context): Sale
     {
-        $context = $this->contextResolver->resolveForUser($user);
-
         return DB::transaction(function () use ($user, $context) {
 
-            $existing = Sale::whereDate('sale_date', today())
+            $locationId = $context->location->id;
+
+            $existing = Sale::where('location_id', $locationId)
+                ->whereBetween('sale_date', [
+                    now()->startOfDay(),
+                    now()->endOfDay(),
+                ])
+                ->with('items.product')
                 ->lockForUpdate()
                 ->first();
 
@@ -65,7 +68,6 @@ class EloquentSaleRepository implements SaleRepository
 
     public function addItem(string $saleId, string $productId, int $qty): Sale
     {
-
         return DB::transaction(function () use ($saleId, $productId, $qty): Sale {
 
             $sale = $this->findOrFail($saleId);
@@ -89,11 +91,11 @@ class EloquentSaleRepository implements SaleRepository
                 ]);
             }
 
+            $sale->save();
+
             $this->recalculateTotals($sale);
 
-            return $sale->fresh([
-                'items.product'
-            ]);
+            return $sale->fresh(['items.product']);
         });
     }
 
@@ -123,18 +125,18 @@ class EloquentSaleRepository implements SaleRepository
 
             $this->recalculateTotals($sale);
 
-            return $sale->fresh([
-                'items.product'
-            ]);
+            return $sale->fresh(['items.product']);
         });
     }
 
     public function createDraft(CreateSaleData $data): Sale
     {
-        return Sale::create([
+        $sale = Sale::create([
             ...$data->toPersistenceArray(),
             'status' => SaleStatus::DRAFT,
         ]);
+
+        return $sale->fresh(['items.product']);
     }
 
     public function save(Sale $sale): void
@@ -172,6 +174,9 @@ class EloquentSaleRepository implements SaleRepository
         });
     }
 
+    /**
+     * This method assumes it runs within an active database transaction.
+     */
     protected function recalculateTotals(Sale $sale): void
     {
         $subtotal = $sale->items()->sum('total_price');

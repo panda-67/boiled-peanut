@@ -2,45 +2,53 @@
 
 namespace App\Policies;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Models\Sale;
+use App\Services\Context\ActiveContext;
 
 class SalePolicy
 {
-    public function create(User $user): bool
+    public function create(User $user, ActiveContext $context): bool
     {
-        $day = app('activeBusinessDay');
-
-        return $day
-            && $day->isOpen()
-            && $user->hasRoleAtLocation(['operator', 'manager']);
+        return $context->businessDay->isOpen()
+            && $user->whomActAs(UserRole::OPERATOR, UserRole::MANAGER);
     }
 
-    public function void(User $user, Sale $sale): bool
+    public function addItem(User $user, Sale $sale, ActiveContext $context): bool
     {
-        $day = app('activeBusinessDay');
-
-        return $day
-            && $day->isOpen()
-            && $user->hasRoleAtLocation('manager');
+        return $context->businessDay->isOpen()
+            && $sale->status->canBeEdit()
+            && $user->whomActAs(UserRole::OPERATOR);
     }
 
-    public function confirm(User $user, Sale $sale): bool
+    public function removeItem(User $user, Sale $sale, ActiveContext $context): bool
     {
-        $day = app('activeBusinessDay');
+        return $context->businessDay->isOpen()
+            && $sale->status->canBeEdit()
+            && $user->whomActAs(UserRole::OPERATOR);
+    }
 
-        return $day
-            && $day->isOpen()
+    public function confirm(User $user, Sale $sale, ActiveContext $context): bool
+    {
+        return $context->businessDay->isOpen()
+            && $sale->business_day_id === $context->businessDay->id
+            && $sale->location_id === $context->location->id
             && $sale->status->canBeConfirmed()
-            && $sale->location_id === $day->location_id;
+            && $user->whomActAs(UserRole::OPERATOR);
     }
 
-    public function settle(User $user, Sale $sale): bool
+    public function cancel(User $user, Sale $sale, ActiveContext $context): bool
     {
-        $day = app('activeBusinessDay');
+        return $context->businessDay->isOpen()
+            && $sale->status->canBeCancelled()
+            && $user->whomActAs(UserRole::MANAGER);
+    }
 
-        return $day
-            && $day->isClosed()
-            && $sale->business_day_id === $day->id;
+    public function settle(User $user, Sale $sale, ActiveContext $context): bool
+    {
+        return $sale->business_day_id === $context->businessDay->id
+            && $sale->status->canBeSettled()
+            && $user->whomActAs(UserRole::MANAGER);
     }
 }

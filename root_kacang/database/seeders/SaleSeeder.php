@@ -14,10 +14,15 @@ class SaleSeeder extends Seeder
      */
     public function run(): void
     {
-        $store = Location::firstWhere('name', 'Main Store');
-        $secondStore = Location::firstWhere('name', 'Second Store');
+        $store = Location::where('name', 'Main Store')->with('openBusinessDay')->first();
+        $secondStore = Location::where('name', 'Second Store')->with('openBusinessDay')->first();
 
-        Sale::factory()->atLocation($store)->create();
-        Sale::factory()->atLocation($secondStore)->create();
+        Sale::factory()->atLocation($store)->create([
+            'business_day_id' => $store->openBusinessDay->id,
+        ]);
+
+        Sale::factory()->atLocation($secondStore)->create([
+            'business_day_id' => $secondStore->openBusinessDay->id,
+        ]);
     }
 }

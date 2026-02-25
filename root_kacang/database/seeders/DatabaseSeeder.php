@@ -18,7 +18,8 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             LocationSeeder::class,
             ProductSeeder::class,
-            SaleSeeder::class
+            BusinessDaySeeder::class,
+            /* SaleSeeder::class */
         ]);
     }
 }

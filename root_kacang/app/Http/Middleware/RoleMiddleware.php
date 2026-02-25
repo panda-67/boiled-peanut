@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\UserRole;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,10 +24,13 @@ class RoleMiddleware
             ], 401);
         }
 
-        if (!in_array($user->role?->code, $roles)) {
-            return response()->json([
-                'message' => 'Forbidden. Insufficient role.'
-            ], 403);
+        $allowed = array_map(
+            fn($r) => UserRole::from($r),
+            $roles
+        );
+
+        if (! $user->role || ! in_array($user->role->code, $allowed, true)) {
+            abort(403, 'Forbidden. Insufficient role.');
         }
 
         return $next($request);

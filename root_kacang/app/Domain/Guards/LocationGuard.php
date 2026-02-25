@@ -10,11 +10,11 @@ final class LocationGuard
 {
     public static function ensureSalePoint(User $user): void
     {
-        if (!$assignment = $user->activeLocation) {
+        if (!$assignment = $user->activeLocation ?? $user->managerActiveLocation) {
             throw new DomainException('USER_HAS_NO_ACTIVE_LOCATION');
         }
 
-        if ($assignment->location->type !== LocationType::SALE_POINT->value) {
+        if ($assignment->location->type !== LocationType::SALE_POINT) {
             throw new DomainException('CONFIRM_SALE_INVALID_LOCATION');
         }
     }

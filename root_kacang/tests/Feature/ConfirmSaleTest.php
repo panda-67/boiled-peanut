@@ -40,11 +40,15 @@ class ConfirmSaleTest extends TestCase
             'date'           => now(),
         ]);
 
+        $businessDay = BusinessDay::factory()
+            ->forLocation($this->salesPoint)
+            ->create(['status' => 'open',]);
+
         $data = CreateSaleData::draft(
             invoiceNumber: 'INV-TEST-001',
             userId: $user->id,
             locationId: $this->salesPoint->id,
-            businessDayId: null,
+            businessDayId: $businessDay->id,
         );
 
         $repo = app(SaleRepository::class);
@@ -56,10 +60,6 @@ class ConfirmSaleTest extends TestCase
             'unit_price'  => 10000,
             'total_price' => 0,
         ]);
-
-        BusinessDay::factory()
-            ->forLocation($this->salesPoint)
-            ->create(['status' => 'open',]);
 
         // Act
         app(SaleService::class)->confirm($sale);
@@ -107,11 +107,16 @@ class ConfirmSaleTest extends TestCase
             'date'           => now(),
         ]);
 
+        $businessDay = BusinessDay::factory()
+            ->forLocation($this->salesPoint)
+            ->onDate(now())
+            ->create();
+
         $data = CreateSaleData::draft(
             invoiceNumber: 'INV-TEST-001',
             userId: $user->id,
             locationId: $this->salesPoint->id,
-            businessDayId: null,
+            businessDayId: $businessDay->id,
         );
 
         $repo = app(SaleRepository::class);
@@ -121,13 +126,10 @@ class ConfirmSaleTest extends TestCase
             'product_id'  => $product->id,
             'quantity'    => 5,
             'unit_price'  => 10000,
-            'total_price' => 0,
+            'total_price' => 50000,
         ]);
 
-        BusinessDay::factory()
-            ->forLocation($this->salesPoint)
-            ->onDate(now())
-            ->create();
+        $this->recalculateTotals($sale);
 
         // Act
         app(SaleService::class)->confirm($sale);

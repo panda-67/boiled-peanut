@@ -42,6 +42,12 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    /** @var array The relationships that should always be loaded. */
+    protected $with = [
+        'managerActiveLocation.location',
+        'activeLocation.location'
+    ];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -121,9 +127,33 @@ class User extends Authenticatable
         ]);
     }
 
-    public function whomActAs(UserRole $role): bool
+    public function whomActAs(UserRole ...$roles): bool
     {
-        return $this->role?->code === $role->value;
+        if (! $this->role) {
+            return false;
+        }
+
+        return in_array($this->role->code, $roles, true);
+    }
+
+    public function getLocationAttribute()
+    {
+        // Manager
+        if ($this->role->code === UserRole::MANAGER) {
+
+            if ($this->managerActiveLocation) {
+                return $this->managerActiveLocation->location;
+            }
+
+            return $this->locations()->first();
+        }
+
+        // Operator
+        if ($this->activeLocation) {
+            return $this->activeLocation->location;
+        }
+
+        return null;
     }
 
     public function role(): BelongsTo

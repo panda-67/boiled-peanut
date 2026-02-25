@@ -5,12 +5,13 @@ namespace App\Repositories;
 use App\Domain\Sales\Data\CreateSaleData;
 use App\Models\Sale;
 use App\Models\User;
+use App\Services\Context\ActiveContext;
 
 interface SaleRepository
 {
     public function findToday(User $user): ?Sale;
 
-    public function startToday(User $user): Sale;
+    public function startToday(User $user, ActiveContext $context): Sale;
 
     public function addItem(string $saleId, string $productId, int $qty): Sale;
 

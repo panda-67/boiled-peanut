@@ -17,9 +17,15 @@ class ProductSeeder extends Seeder
     public function run(): void
     {
         // 1. Pastikan location MainStore ada
-        $location = Location::firstWhere([
+        $main = Location::firstWhere([
             'name' => 'Main Store',
         ]);
+
+        $second = Location::firstWhere([
+            'name' => 'Second Store'
+        ]);
+
+        $locations = collect([$main, $second]);
 
         // 2. Buat 2 produk
         $products = Product::factory()
@@ -31,17 +37,25 @@ class ProductSeeder extends Seeder
             ->create();
 
         // 3. Buat initial stock transaction (ledger-based)
-        foreach ($products as $product) {
-            ProductTransaction::create([
-                'product_id'     => $product->id,
-                'location_id'    => $location->id,
-                'date'           => now(),
-                'type'           => 'in', // positif
-                'quantity'       => 100,
-                'reference_type' => 'production',
-                'reference_id'   => Str::uuid(),
-                'note'           => 'Initial stock seeding',
-            ]);
+        $transactions = [];
+
+        foreach ($locations as $location) {
+            foreach ($products as $product) {
+                $transactions[] = [
+                    'product_id'     => $product->id,
+                    'location_id'    => $location->id,
+                    'date'           => now(),
+                    'type'           => 'in',
+                    'quantity'       => 100,
+                    'reference_type' => 'production',
+                    'reference_id'   => (string) Str::uuid(),
+                    'note'           => 'Initial stock seeding',
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ];
+            }
         }
+
+        ProductTransaction::insert($transactions);
     }
 }

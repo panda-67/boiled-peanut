@@ -25,19 +25,21 @@ class SaleService
 
             $context = $this->contextResolver->resolveForUser($sale->user);
 
+            /** @var \App\Models\Sale $sale */
             $sale = Sale::whereKey($sale->id)->lockForUpdate()->first();
 
+            /** @var \App\Models\BusinessDay $businessDay */
             $businessDay = BusinessDay::whereKey($context->businessDay->id)
                 ->lockForUpdate()
                 ->first();
 
-            if (!$user = $sale->user) {
+            if (! $user = $sale->user) {
                 throw new DomainException('SALE_HAS_NO_OWNER');
             }
 
             LocationGuard::ensureSalePoint($user);
 
-            if (!$sale->status->canBeConfirmed()) {
+            if (! $sale->status->canBeConfirmed()) {
                 throw new DomainException('CONFIRM_SALE_INVALID_STATE');
             }
 
@@ -53,22 +55,23 @@ class SaleService
                 throw new DomainException('SALE_LOCATION_MISMATCH');
             }
 
-            if ($businessDay->status !== 'open') {
+            if ($sale->business_day_id !== $businessDay->id) {
+                throw new DomainException('INVALID_BUSINESS_DAY');
+            }
+
+            if ($businessDay->isClosed()) {
                 throw new DomainException('BUSINESS_DAY_ALREADY_CLOSED');
             }
 
-            $subtotal = 0;
+            $sale->fill([
+                'business_day_id' => $context->businessDay->id,
+            ]);
 
-            $sale->items->each(function ($item) use ($context, $sale, &$subtotal) {
+            $this->repository->save($sale);
+
+            $sale->items->each(function ($item) use ($context, $sale) {
                 $product = $item->product;
                 $qty     = $item->quantity;
-
-                // Lock line total (masih DRAFT → boleh)
-                $lineTotal = $qty * $item->unit_price;
-
-                $item->update([
-                    'total_price' => $lineTotal,
-                ]);
 
                 // Ledger write: RESERVE
                 $this->stockService->reserve(
@@ -79,32 +82,23 @@ class SaleService
                     referenceType: ReferenceType::SALE,
                     referenceId: $sale->id,
                 );
-
-                $subtotal += $lineTotal;
             });
-
-            // Lock financial totals (MASIH DRAFT)
-            $sale->fill([
-                'subtotal'        => $subtotal,
-                'total'           => $subtotal - $sale->discount + $sale->tax,
-                'bussines_day_id' => $context->businessDay->id,
-            ]);
-
-            $this->repository->save($sale);
 
             $this->repository->confirm($sale->id);
 
-            return $sale;
+            return $sale->fresh(['items.product']);
         });
     }
 
-    public function cancel(Sale $sale)
+    public function cancel(Sale $sale): Sale
     {
-        DB::transaction(function () use ($sale) {
+        return DB::transaction(function () use ($sale) {
 
             $this->repository->cancel($sale->id);
 
             $this->stockService->releaseReservation($sale);
+
+            return $sale->fresh();
         });
     }
 }

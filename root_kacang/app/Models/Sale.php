@@ -40,6 +40,9 @@ class Sale extends Model
         'status' => SaleStatus::class,
     ];
 
+    /** @var array The relationships that should always be loaded. */
+    protected $with = ['items.product'];
+
     protected bool $isTransitioning = false;
 
     protected array $guardIgnoredDirty = [

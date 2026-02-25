@@ -5,22 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Enums\ProductTransactionType;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
-use App\Services\Context\ActiveContextResolver;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    public function __construct(
-        protected ActiveContextResolver $contextResolver
-    ) {}
-
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $context = $this->contextResolver->resolveForUser($request->user());
-        $locationId = $context->location->id;
+        $locationId = $request->user()->location->id;
 
         return Product::query()
             ->select([
