@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller implements HasMiddleware
@@ -72,11 +73,21 @@ class AuthController extends Controller implements HasMiddleware
 
         $payload = $this->buildPayload($user, $activeLocation);
 
-        $payload['accessibleLocations'] = $user->locations
-            ->map(fn($loc) => [
-                'id'   => $loc->_id,
-                'name' => $loc->name,
-            ]);
+        if ($user->whomActAs(UserRole::MANAGER)) {
+            $payload['accessibleLocations'] = $user->locations
+                ->map(fn($loc) => [
+                    'id'   => $loc->_id,
+                    'name' => $loc->name,
+                ]);
+        }
+
+        if ($user->whomActAs(UserRole::OWNER)) {
+            $payload['accessibleLocations'] = $this->getActiveLocation()
+                ->map(fn($loc) => [
+                    'id'    => $loc->_id,
+                    'name'  => $loc->name
+                ]);
+        }
 
         $businessDay = $this->resolveBusinessDay($activeLocation);
 
@@ -108,7 +119,34 @@ class AuthController extends Controller implements HasMiddleware
             return $this->resolveManagerLocation($user, $locationId);
         }
 
+        if ($user->whomActAs(UserRole::OWNER)) {
+            return $this->resolveOwnerLocation($user, $locationId);
+        }
+
         return $this->resolveOperatorLocation($user);
+    }
+
+    private function resolveOwnerLocation(User $user, ?string $locationId): Location
+    {
+        if ($locationId) {
+            $location = Location::where('is_active', true)
+                ->where('_id', $locationId)
+                ->firstOrFail();
+
+            $user->setOwnerActiveLocation($location);
+            return $location;
+        }
+
+        $existing = $user->ownerActiveLocation?->location;
+        if ($existing) {
+            return $existing;
+        }
+
+        $default = Location::where('is_active', true)->first();
+
+        $user->setOwnerActiveLocation($default);
+
+        return $default;
     }
 
     private function resolveManagerLocation(User $user, ?string $locationId): Location
@@ -161,7 +199,7 @@ class AuthController extends Controller implements HasMiddleware
 
         return BusinessDay::query()
             ->where('location_id', $location->id)
-            ->whereDate('date', today())
+            /* ->whereDate('date', today()) */
             ->first();
     }
 
@@ -176,5 +214,10 @@ class AuthController extends Controller implements HasMiddleware
             'activeLocation' => $activeLocation->_id,
             'activeLocationName' => $activeLocation->name,
         ];
+    }
+
+    private function getActiveLocation(): Collection
+    {
+        return Location::where('is_active', true)->get();
     }
 }

@@ -10,7 +10,7 @@ class Material extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'unit', 'stock', 'is_stocked', 'default_unit_cost'];
+    protected $fillable = ['name', 'unit', 'is_stocked', 'default_unit_cost'];
 
     public function productions(): HasMany
     {

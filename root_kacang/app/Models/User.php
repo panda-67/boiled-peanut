@@ -79,6 +79,17 @@ class User extends Authenticatable
     }
 
     /**
+     * Owner location selection
+     */
+    public function setOwnerActiveLocation(Location $location): void
+    {
+        $this->ownerActiveLocation()->updateOrCreate(
+            ['user_id' => $this->id],
+            ['location_id' => $location->id]
+        );
+    }
+
+    /**
      * Manager assignment // could be many location
      */
     public function attachManagerToLocation(Location $location): void
@@ -148,6 +159,16 @@ class User extends Authenticatable
             return $this->locations()->first();
         }
 
+        // Owner
+        if ($this->role->code === UserRole::OWNER) {
+
+            if ($this->ownerActiveLocation) {
+                return $this->ownerActiveLocation->location;
+            }
+
+            return Location::where('is_active', true)->first();
+        }
+
         // Operator
         if ($this->activeLocation) {
             return $this->activeLocation->location;
@@ -182,6 +203,14 @@ class User extends Authenticatable
      * Determine selected location by manager
      */
     public function managerActiveLocation(): HasOne
+    {
+        return $this->hasOne(ManagerActiveLocation::class);
+    }
+
+    /**
+     * Determine selected location by owner
+     */
+    public function ownerActiveLocation(): HasOne
     {
         return $this->hasOne(ManagerActiveLocation::class);
     }

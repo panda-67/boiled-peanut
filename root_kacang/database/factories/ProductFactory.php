@@ -19,6 +19,7 @@ class ProductFactory extends Factory
         return [
             'name' => 'Kacang Rebus',
             'selling_price' => 5000,
+            'unit' => 'Bungkus',
         ];
     }
 }

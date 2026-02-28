@@ -110,7 +110,7 @@ class Sale extends Model
             => ['status', 'confirmed_at'],
 
             [SaleStatus::CONFIRMED, SaleStatus::SETTLED]
-            => ['status', 'paid_at'],
+            => ['status', 'paid_at', 'payment_status', 'payment_method'],
 
             [SaleStatus::CONFIRMED, SaleStatus::CANCELLED]
             => ['status'],
@@ -142,6 +142,9 @@ class Sale extends Model
 
         $this->status = SaleStatus::SETTLED;
         $this->paid_at = now();
+
+        $this->payment_status  = 'paid';
+        $this->payment_method  = 'cash';
     }
 
     public function cancel(): void

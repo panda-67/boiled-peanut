@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Location;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -18,6 +19,7 @@ class UserSeeder extends Seeder
         $owner = Role::firstWhere('code', 'owner');
         $manager = Role::firstWhere('code', 'manager');
         $op = Role::firstWhere('code', 'operator');
+        Location::factory()->central()->create();
 
         User::create([
             'name' => 'Ahmad',

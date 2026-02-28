@@ -10,33 +10,15 @@ use App\Services\SaleService;
 use App\Services\SettlementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 
-class SaleController extends Controller implements HasMiddleware
+class SaleController extends Controller
 {
     public function __construct(
         protected ActiveContextResolver $contextResolver,
         protected SaleRepository $sales,
         protected SaleService $service
     ) {}
-
-    public static function middleware(): array
-    {
-        return [];
-        /* return [ */
-        /*     new Middleware('role:operator', only: [ */
-        /*         'startToday', */
-        /*         'addItem', */
-        /*         'removeItem', */
-        /*         'confirm', */
-        /*     ]), */
-        /*     new Middleware('role:manager', only: [ */
-        /*         'settle' */
-        /*     ]) */
-        /* ]; */
-    }
 
     public function today(): JsonResponse
     {

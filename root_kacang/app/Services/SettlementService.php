@@ -44,15 +44,8 @@ class SettlementService
             $sale->settlement()->create([
                 'amount_received' => $amountReceived,
                 'received_at'     => now(),
-                'method'          => 'warung',
+                'method'          => 'cash',
             ]);
-
-            $sale->fill([
-                'payment_status'  => 'paid',
-                'payment_method'  => 'warung'
-            ]);
-
-            $this->repository->save($sale);
 
             $this->stockService->finalizeSale($sale);
 

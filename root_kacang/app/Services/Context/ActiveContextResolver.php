@@ -29,6 +29,10 @@ class ActiveContextResolver
 
     protected function resolveLocation(User $user): Location
     {
+        if ($user->whomActAs(UserRole::OWNER)) {
+            return $user->ownerActiveLocation->location;
+        }
+
         if ($user->whomActAs(UserRole::MANAGER)) {
 
             $context = $user->managerActiveLocation;

@@ -15,7 +15,6 @@ class LocationSeeder extends Seeder
      */
     public function run(): void
     {
-        Location::factory()->central()->create();
         Location::factory()->salesPoint()->create(['name' => 'Main Store']);
         Location::factory()->salesPoint()->create(['name' => 'Second Store']);
         $location = Location::factory()->count(3)->create();

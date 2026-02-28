@@ -20,6 +20,7 @@ class Production extends Model
         'date',
         'product_id',
         'output_quantity',
+        'business_day_id',
         'total_cost',
         'status'
     ];
@@ -46,8 +47,8 @@ class Production extends Model
         return $this->belongsTo(Product::class);
     }
 
-    public function material(): BelongsTo
+    public function businessDay(): BelongsTo
     {
-        return $this->belongsTo(Material::class);
+        return $this->belongsTo(BusinessDay::class);
     }
 }

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productions', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->date('date');
+            $table->dateTime('date');
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->decimal('output_quantity', 10, 2);
             $table->decimal('total_cost', 15, 2)->default(0);

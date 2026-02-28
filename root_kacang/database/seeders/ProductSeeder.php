@@ -47,7 +47,7 @@ class ProductSeeder extends Seeder
                     'date'           => now(),
                     'type'           => 'in',
                     'quantity'       => 100,
-                    'reference_type' => 'production',
+                    'reference_type' => 'transfer',
                     'reference_id'   => (string) Str::uuid(),
                     'note'           => 'Initial stock seeding',
                     'created_at'     => now(),

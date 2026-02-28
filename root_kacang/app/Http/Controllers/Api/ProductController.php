@@ -21,6 +21,7 @@ class ProductController extends Controller
                 'products.id',
                 'products.name',
                 'products.selling_price',
+                'products.unit',
             ])
             ->selectSub(function ($q) use ($locationId) {
                 $q->from('product_transactions')
@@ -49,6 +50,7 @@ class ProductController extends Controller
                     'id'        => $product->id,
                     'name'      => $product->name,
                     'price'     => $product->selling_price,
+                    'unit'      => $product->unit,
                     'stock'     => $stock,
                     'available' => $stock - $reserved,
                 ];

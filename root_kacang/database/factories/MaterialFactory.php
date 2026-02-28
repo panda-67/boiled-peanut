@@ -17,10 +17,17 @@ class MaterialFactory extends Factory
     public function definition(): array
     {
         return [
-            'name'  => 'Kacang Mentah',
-            'unit'  => 'kg',
-            'default_unit_cost' => 10000,
+            'name' => $this->faker->unique()->word(),
+            'unit' => 'kg',
             'is_stocked' => true,
+            'default_unit_cost' => $this->faker->numberBetween(10000, 20000),
         ];
+    }
+
+    public function notStocked(): static
+    {
+        return $this->state(fn() => [
+            'is_stocked' => false,
+        ]);
     }
 }
