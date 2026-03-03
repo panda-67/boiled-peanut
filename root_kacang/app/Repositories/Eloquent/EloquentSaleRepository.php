@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Eloquent;
 
+use App\Domain\Guards\LocationGuard;
 use App\Domain\Sales\Data\CreateSaleData;
 use App\Enums\SaleStatus;
 use App\Models\Product;
@@ -36,6 +37,8 @@ class EloquentSaleRepository implements SaleRepository
 
     public function startToday(User $user, ActiveContext $context): Sale
     {
+        LocationGuard::ensureSalePoint($user);
+
         return DB::transaction(function () use ($user, $context) {
 
             $locationId = $context->location->id;

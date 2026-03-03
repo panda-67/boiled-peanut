@@ -4,17 +4,19 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\Location;
+use App\Models\Material;
 use Illuminate\Support\Facades\DB;
 
 class InventoryService
 {
-    public function get(?string $locationId)
+    public function get(?string $type, ?string $locationId)
     {
         $products = Product::select('id', 'name', 'selling_price')->get();
 
-        $locations = $locationId
-            ? Location::where('is_active', true)->where('_id', $locationId)->get()
-            : Location::where('is_active', true)->select('id', '_id', 'name')->get();
+        $locations = Location::where('is_active', true)
+            ->when($type, fn($q, $t) => $q->where('type', $t))
+            ->when($locationId, fn($q, $id) => $q->where('_id', $id))
+            ->get(['id', '_id', 'name']);
 
         $transactions = DB::table('product_transactions')
             ->select(
@@ -40,7 +42,7 @@ class InventoryService
             ->get()
             ->groupBy('product_id');
 
-        $result = [];
+        $result = collect([]);
 
         foreach ($products as $product) {
 
@@ -56,20 +58,54 @@ class InventoryService
                 $reserved = (float) ($row->reserved ?? 0);
 
                 $productLocations[] = [
-                    'id' => $location->_id,
-                    'name' => $location->name,
-                    'stock' => $stock,
-                    'reserved' => $reserved,
+                    'id'        => $location->_id,
+                    'name'      => $location->name,
+                    'stock'     => $stock,
+                    'reserved'  => $reserved,
                     'available' => $stock - $reserved,
                 ];
             }
 
-            $result[] = [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->selling_price,
+            $result->push([
+                'id'        => $product->id,
+                'name'      => $product->name,
+                'price'     => $product->selling_price,
                 'locations' => $productLocations,
-            ];
+            ]);
+        }
+
+        $materials = collect([]);
+
+        if ($type === 'central' && $locations->isNotEmpty()) {
+
+            $materialModels = Material::where('is_stocked', true)->get();
+
+            foreach ($materialModels as $material) {
+
+                $materialLocations = [];
+
+                foreach ($locations as $location) {
+
+                    $stock = (float) $material->stockAt($location);
+
+                    $materialLocations[] = [
+                        'id'        => $location->_id,
+                        'name'      => $location->name,
+                        'stock'     => $stock,
+                        'reserved'  => 0,
+                        'available' => $stock,
+                    ];
+                }
+
+                $materials->push([
+                    'id'        => $material->id,
+                    'name'      => $material->name,
+                    'price'     => $material->default_unit_cost,
+                    'locations' => $materialLocations,
+                ]);
+            }
+
+            $result = $result->concat($materials)->values();
         }
 
         return $result;

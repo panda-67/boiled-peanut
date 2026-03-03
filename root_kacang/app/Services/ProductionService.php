@@ -52,11 +52,13 @@ class ProductionService
             throw new \Exception('Production already processed');
         }
 
-        $central = Location::where('type', 'central')->firstOrFail();
+        return DB::transaction(function () use ($production) {
 
-        return DB::transaction(function () use ($production, $central) {
+            $production->load(['materials', 'businessDay.location'])->lockForUpdate();
 
-            $production->load('materials')->lockForUpdate();
+            $central = Location::where('id', $production->businessDay->location->id)
+                ->where('type', 'central')
+                ->firstOrFail();
 
             $totalCost = 0;
 
@@ -66,7 +68,7 @@ class ProductionService
                 // Material OUT
                 if ($material->is_stocked) {
                     app(StockMovementService::class)
-                        ->outForProduction($material, $qty, $production);
+                        ->outForProduction($material, $central, $qty, $production);
                 }
 
                 $totalCost += $material->pivot->total_cost;

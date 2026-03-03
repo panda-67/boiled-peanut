@@ -12,7 +12,7 @@ class SalePolicy
     public function create(User $user, ActiveContext $context): bool
     {
         return $context->businessDay->isOpen()
-            && $user->whomActAs(UserRole::OPERATOR, UserRole::MANAGER);
+            && $user->whomActAs(UserRole::OPERATOR, UserRole::MANAGER, UserRole::OWNER);
     }
 
     public function addItem(User $user, Sale $sale, ActiveContext $context): bool

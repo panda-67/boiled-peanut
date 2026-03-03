@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BusinessDayStatus;
 use App\Policies\BusinessDayPolicy;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,6 +28,7 @@ class BusinessDay extends Model
 
     protected $casts = [
         'date' => 'date',
+        'status' => BusinessDayStatus::class,
         'opened_at' => 'datetime',
         'closed_at' => 'datetime',
     ];
@@ -58,12 +60,12 @@ class BusinessDay extends Model
 
     public function isOpen(): bool
     {
-        return $this->status === 'open';
+        return $this->status === BusinessDayStatus::OPEN;
     }
 
     public function isClosed(): bool
     {
-        return $this->status === 'closed';
+        return $this->status === BusinessDayStatus::CLOSED;
     }
 
     public function isBalanced(): bool
@@ -75,7 +77,7 @@ class BusinessDay extends Model
     public static function activeFor(int $locationId): ?self
     {
         return self::where('location_id', $locationId)
-            ->where('status', 'open')
+            ->where('status', BusinessDayStatus::OPEN)
             ->first();
     }
 }

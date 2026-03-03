@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ReferenceType;
+use App\Enums\StockMovementType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -20,6 +21,7 @@ class StockMovement extends Model
 
     protected $casts = [
         'quantity' => 'decimal:3',
+        'type' => StockMovementType::class,
     ];
 
     public function material(): BelongsTo

@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Enums\ProductTransactionType;
 use App\Enums\ReferenceType;
+use App\Enums\StockMovementType;
 use App\Models\Location;
 use App\Models\Material;
 use App\Models\Production;
@@ -11,16 +11,17 @@ use App\Models\StockMovement;
 
 class StockMovementService
 {
-    public function inForPurchase(
+    public function inFromPurchase(
         Material $material,
+        Location $location,
         float $qty,
         ?string $note = null
     ): void {
         StockMovement::create([
             'material_id'    => $material->id,
-            'location_id'    => $this->centralLocation()->id,
+            'location_id'    => $location->id,
             'quantity'       => $qty, // POSITIF
-            'type'           => ProductTransactionType::IN,
+            'type'           => StockMovementType::IN,
             'reference_type' => ReferenceType::PURCHASE,
             'note'           => $note,
         ]);
@@ -28,6 +29,7 @@ class StockMovementService
 
     public function outForProduction(
         Material $material,
+        Location $location,
         float $qty,
         Production $production
     ): StockMovement {
@@ -37,17 +39,12 @@ class StockMovementService
 
         return StockMovement::create([
             'material_id'    => $material->id,
-            'location_id'    => $this->centralLocation()->id,
+            'location_id'    => $location->id,
             'quantity'       => -abs($qty),
-            'type'           => ProductTransactionType::OUT,
+            'type'           => StockMovementType::OUT,
             'reference_type' => ReferenceType::PRODUCTION,
             'reference_id'   => $production->id,
             'note'           => 'Material used for production',
         ]);
-    }
-
-    private function centralLocation(): Location
-    {
-        return Location::where('type', 'central')->firstOrFail();
     }
 }

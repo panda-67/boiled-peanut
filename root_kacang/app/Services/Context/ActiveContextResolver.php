@@ -2,14 +2,40 @@
 
 namespace App\Services\Context;
 
+use App\Enums\BusinessDayStatus;
 use App\Enums\UserRole;
 use App\Models\BusinessDay;
 use App\Models\Location;
 use App\Models\User;
+use App\Services\BusinessDayService;
 use DomainException;
 
 class ActiveContextResolver
 {
+    public function __construct(
+        protected BusinessDayService $service
+    ) {}
+
+    public function resolveCentralContext(User $user, ?string $locationId): ActiveContext
+    {
+        $central = Location::where('type', 'central')->when(
+            $locationId,
+            fn($q, $id) => $q->where('_id', $id)
+        )->firstOrFail();
+
+        if (!$central->is_active) {
+            throw new DomainException('CENTRAL_LOCATION_INACTIVE');
+        }
+
+        $businessDay = BusinessDay::activeFor($central->id);
+
+        if (!$businessDay) {
+            $businessDay = $this->service->open($central->id, $user->id);
+        }
+
+        return new ActiveContext($central, $businessDay);
+    }
+
     public function resolveForUser(User $user): ActiveContext
     {
         $location = $this->resolveLocation($user);

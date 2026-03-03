@@ -6,7 +6,7 @@ use App\Enums\UserRole;
 use App\Models\User;
 use App\Services\Context\ActiveContext;
 
-class ProductionPolicy
+class MaterialPolicy
 {
     public function create(User $user, ActiveContext $context): bool
     {
