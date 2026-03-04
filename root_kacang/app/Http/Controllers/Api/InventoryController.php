@@ -25,8 +25,8 @@ class InventoryController extends Controller
     public function index(Request $request, InventoryService $service): JsonResponse
     {
         return response()->json($service->get(
-            $request->query('type'),
-            $request->query('location')
+            locationId: $request->query('location'),
+            type: $request->query('type'),
         ));
     }
 
@@ -58,27 +58,6 @@ class InventoryController extends Controller
         return response()->json(['message' => 'Production execute success.'], 201);
     }
 
-    public function transfer(Product $product, Request $request, ProductTransferService $service): JsonResponse
-    {
-        $validated = $request->validate([
-            'from'        => ['required', 'uuid'],
-            'destination' => ['required', 'uuid'],
-            'quantity'    => ['required', 'integer', 'min:1'],
-        ]);
-
-        $from = Location::firstWhere('_id', $validated['from']);
-        $to = Location::firstWhere('_id', $validated['destination']);
-
-        $service->transfer(
-            $product,
-            $from,
-            $to,
-            $validated['quantity']
-        );
-
-        return response()->json(['message' => 'Transfer success.'], 201);
-    }
-
     public function stockIn(Material $material, Request $request, StockMovementService $service): JsonResponse
     {
         // INFO: In case will have multiple central point and FE will send _id instead of id for location
@@ -91,8 +70,9 @@ class InventoryController extends Controller
         $this->authorize('create', [Material::class, $context]);
 
         $validated = $request->validate([
-            'quantity'    => ['required', 'numeric', 'min:0.0001'],
-            'note'        => ['nullable', 'string'],
+            'quantity'  => ['required', 'numeric', 'min:1'],
+            'price'     => ['nullable', 'numeric', 'min:1000', 'decimal:0,2'],
+            'note'      => ['nullable', 'string'],
         ]);
 
         $service->inFromPurchase(
@@ -102,8 +82,31 @@ class InventoryController extends Controller
             note: $validated['note'] ?? null
         );
 
-        return response()->json([
-            'message' => 'Material stock successfully added.'
+        if ($request->filled('price')) {
+            $material->update(['default_unit_cost' => $validated['price']]);
+        }
+
+        return response()->json(['message' => 'Material stock successfully added.']);
+    }
+
+    public function transfer(Product $product, Request $request, ProductTransferService $service): JsonResponse
+    {
+        $validated = $request->validate([
+            'from'        => ['required', 'uuid'],
+            'destination' => ['required', 'uuid'],
+            'quantity'    => ['required', 'integer', 'min:1'],
         ]);
+
+        $from = Location::firstWhere('_id', $validated['from']);
+        $to = Location::firstWhere('_id', $validated['destination']);
+
+        $service->transfer(
+            product: $product,
+            from: $from,
+            to: $to,
+            qty: $validated['quantity']
+        );
+
+        return response()->json(['message' => 'Transfer success.'], 201);
     }
 }

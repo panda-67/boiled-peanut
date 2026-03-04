@@ -46,7 +46,7 @@ class InventoryService
 
         foreach ($products as $product) {
 
-            $productLocations = [];
+            $productLocations = collect([]);
 
             foreach ($locations as $location) {
 
@@ -57,13 +57,13 @@ class InventoryService
                 $stock = (float) ($row->stock ?? 0);
                 $reserved = (float) ($row->reserved ?? 0);
 
-                $productLocations[] = [
+                $productLocations->push([
                     'id'        => $location->_id,
                     'name'      => $location->name,
                     'stock'     => $stock,
                     'reserved'  => $reserved,
                     'available' => $stock - $reserved,
-                ];
+                ]);
             }
 
             $result->push([
@@ -82,19 +82,17 @@ class InventoryService
 
             foreach ($materialModels as $material) {
 
-                $materialLocations = [];
+                $materialLocations = collect([]);
 
                 foreach ($locations as $location) {
 
                     $stock = (float) $material->stockAt($location);
 
-                    $materialLocations[] = [
+                    $materialLocations->push([
                         'id'        => $location->_id,
                         'name'      => $location->name,
-                        'stock'     => $stock,
-                        'reserved'  => 0,
                         'available' => $stock,
-                    ];
+                    ]);
                 }
 
                 $materials->push([

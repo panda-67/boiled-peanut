@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/', 'index');
             Route::post('/{product}/production', 'production');
             Route::post('/{product}/transfer', 'transfer');
+            Route::post('/{material}/stock-in', 'stockIn');
         });
 });
 
