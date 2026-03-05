@@ -42,7 +42,7 @@ class SalePolicy
     {
         return $context->businessDay->isOpen()
             && $sale->status->canBeCancelled()
-            && $user->whomActAs(UserRole::MANAGER);
+            && $user->whomActAs(UserRole::OPERATOR, UserRole::MANAGER);
     }
 
     public function settle(User $user, Sale $sale, ActiveContext $context): bool

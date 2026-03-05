@@ -38,6 +38,7 @@ class Sale extends Model
 
     protected $casts = [
         'status' => SaleStatus::class,
+        'sale_date' => 'datetime',
     ];
 
     /** @var array The relationships that should always be loaded. */
@@ -139,10 +140,9 @@ class Sale extends Model
         }
 
         $this->isTransitioning = true;
-
         $this->status = SaleStatus::SETTLED;
-        $this->paid_at = now();
 
+        $this->paid_at = now();
         $this->payment_status  = 'paid';
         $this->payment_method  = 'cash';
     }

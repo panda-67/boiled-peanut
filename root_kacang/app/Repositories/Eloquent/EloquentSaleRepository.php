@@ -4,6 +4,7 @@ namespace App\Repositories\Eloquent;
 
 use App\Domain\Guards\LocationGuard;
 use App\Domain\Sales\Data\CreateSaleData;
+use App\Enums\BusinessDayStatus;
 use App\Enums\SaleStatus;
 use App\Models\Product;
 use App\Models\Sale;
@@ -21,15 +22,15 @@ class EloquentSaleRepository implements SaleRepository
         $locationId = $user->location->id;
 
         return Sale::where('location_id', $locationId)
-            ->whereBetween('sale_date', [
-                now()->startOfDay(),
-                now()->endOfDay(),
-            ])
             ->whereIn('status', [
                 SaleStatus::DRAFT,
                 SaleStatus::CONFIRMED,
                 SaleStatus::SETTLED,
             ])
+            ->whereHas(
+                'businessDay',
+                fn($q) => $q->where('status', BusinessDayStatus::OPEN)
+            )
             ->with('items.product')
             ->latest('id')
             ->first();
@@ -44,25 +45,23 @@ class EloquentSaleRepository implements SaleRepository
             $locationId = $context->location->id;
 
             $existing = Sale::where('location_id', $locationId)
-                ->whereBetween('sale_date', [
-                    now()->startOfDay(),
-                    now()->endOfDay(),
-                ])
+                ->where('business_day_id', $context->businessDay->id)
                 ->with('items.product')
                 ->lockForUpdate()
                 ->first();
 
-            if ($existing) {
+            if ($existing && $existing->status != SaleStatus::CANCELLED) {
                 return $existing;
             }
 
             $invoiceNumber = $this->generateInvoiceNumber();
 
             $data = CreateSaleData::draft(
-                invoiceNumber: $invoiceNumber,
                 userId: $user->id,
                 locationId: $context->location->id,
                 businessDayId: $context->businessDay->id,
+                invoiceNumber: $invoiceNumber,
+                date: $existing?->sale_date,
             );
 
             return $this->createDraft($data);

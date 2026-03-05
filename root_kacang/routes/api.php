@@ -1,17 +1,26 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BusinessDayController;
 use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\MaterialController;
 use App\Http\Controllers\Api\ProductController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\SaleController;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/locations', [LocationController::class, 'index']);
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/materials', [MaterialController::class, 'index']);
+
+    Route::prefix('business-day')
+        ->controller(BusinessDayController::class)
+        ->group(function () {
+            Route::get('/', 'index');
+            Route::post('/open', 'open');
+            Route::post('/close', 'close');
+        });
 
     Route::prefix('sales')
         ->controller(SaleController::class)

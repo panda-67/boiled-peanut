@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BusinessDayStatus;
 use App\Enums\LocationType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,7 +34,7 @@ class Location extends Model
     public function openBusinessDay(): HasOne
     {
         return $this->hasOne(BusinessDay::class)
-            ->where('status', 'open')
+            ->where('status', BusinessDayStatus::OPEN)
             ->latestOfMany();
     }
 }
