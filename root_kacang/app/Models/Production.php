@@ -22,6 +22,7 @@ class Production extends Model
         'output_quantity',
         'business_day_id',
         'total_cost',
+        'unit_cost',
         'status'
     ];
 
@@ -35,6 +36,7 @@ class Production extends Model
     {
         return $this->belongsToMany(Material::class, 'production_materials')
             ->withPivot([
+                'production_id',
                 'quantity_used',
                 'unit_cost',
                 'total_cost',

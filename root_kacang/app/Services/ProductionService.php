@@ -62,30 +62,37 @@ class ProductionService
 
             $totalCost = 0;
 
-            foreach ($production->materials as $material) {
+            $production->materials->each(function ($material) use (&$totalCost, $central) {
                 $qty = $material->pivot->quantity_used;
 
                 // Material OUT
                 if ($material->is_stocked) {
                     app(StockMovementService::class)
-                        ->outForProduction($material, $central, $qty, $production);
+                        ->outForProduction($material, $central, $qty, $material->pivot->production_id);
                 }
 
                 $totalCost += $material->pivot->total_cost;
-            }
+            });
+
+            $qty = $production->output_quantity;
 
             // Product IN
             app(ProductStockService::class)->stockIn(
                 product: $production->product,
                 location: $central,
-                qty: $production->output_quantity,
+                qty: $qty,
                 referenceType: ReferenceType::PRODUCTION,
                 referenceId: $production->id,
                 note: 'Production output'
             );
 
+            $unitCost = $qty > 0
+                ? bcdiv((string) $totalCost, (string) $qty, 2)
+                : '0.00';
+
             $production->update([
                 'total_cost' => $totalCost,
+                'unit_cost'  => $unitCost,
                 'status'     => 'completed',
             ]);
 

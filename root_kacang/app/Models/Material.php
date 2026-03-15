@@ -6,6 +6,7 @@ use App\Policies\MaterialPolicy;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[UsePolicy(MaterialPolicy::class)]
@@ -15,9 +16,16 @@ class Material extends Model
 
     protected $fillable = ['name', 'unit', 'is_stocked', 'default_unit_cost'];
 
-    public function productions(): HasMany
+    public function productions(): BelongsToMany
     {
-        return $this->hasMany(Production::class);
+        return $this->belongsToMany(Production::class, 'production_materials')
+            ->withPivot([
+                'production_id',
+                'quantity_used',
+                'unit_cost',
+                'total_cost',
+            ])
+            ->withTimestamps();
     }
 
     public function stockMovements(): HasMany

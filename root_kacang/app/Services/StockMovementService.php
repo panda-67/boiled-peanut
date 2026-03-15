@@ -6,7 +6,6 @@ use App\Enums\ReferenceType;
 use App\Enums\StockMovementType;
 use App\Models\Location;
 use App\Models\Material;
-use App\Models\Production;
 use App\Models\StockMovement;
 
 class StockMovementService
@@ -31,7 +30,7 @@ class StockMovementService
         Material $material,
         Location $location,
         float $qty,
-        Production $production
+        string $productionId
     ): StockMovement {
         if ($material->stock() < $qty) {
             throw new \Exception('Stok material tidak mencukupi');
@@ -43,7 +42,7 @@ class StockMovementService
             'quantity'       => -abs($qty),
             'type'           => StockMovementType::OUT,
             'reference_type' => ReferenceType::PRODUCTION,
-            'reference_id'   => $production->id,
+            'reference_id'   => $productionId,
             'note'           => 'Material used for production',
         ]);
     }

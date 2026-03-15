@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->decimal('output_quantity', 10, 2);
             $table->decimal('total_cost', 15, 2)->default(0);
+            $table->decimal('unit_cost', 15, 2)->default(0);
             $table->enum('status', [
                 'draft',
                 'completed',

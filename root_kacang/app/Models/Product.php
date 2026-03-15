@@ -6,16 +6,24 @@ use App\Enums\ProductTransactionType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'selling_price'];
+    protected $fillable = ['name', 'selling_price', 'unit'];
 
     public function productions(): HasMany
     {
         return $this->hasMany(Production::class);
+    }
+
+    public function latestProduction(): HasOne
+    {
+        return $this->hasOne(Production::class)
+            ->where('status', 'completed')
+            ->latestOfMany('date');
     }
 
     public function transactions(): HasMany

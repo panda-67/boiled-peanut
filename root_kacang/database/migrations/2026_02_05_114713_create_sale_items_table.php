@@ -24,6 +24,8 @@ return new class extends Migration
             $table->decimal('quantity', 9, 2);
             $table->decimal('unit_price', 15, 2);
             $table->decimal('total_price', 15, 2);
+            $table->decimal('unit_cost', 15, 2);
+            $table->decimal('total_cost', 15, 2);
             $table->timestamps();
         });
     }

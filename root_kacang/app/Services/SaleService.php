@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Domain\Guards\LocationGuard;
 use App\Enums\ReferenceType;
 use App\Models\BusinessDay;
+use App\Models\Production;
 use App\Models\Sale;
 use App\Repositories\SaleRepository;
 use App\Services\Context\ActiveContextResolver;
@@ -26,7 +27,9 @@ class SaleService
             $context = $this->contextResolver->resolveForUser($sale->user);
 
             /** @var \App\Models\Sale $sale */
-            $sale = Sale::whereKey($sale->id)->lockForUpdate()->first();
+            $sale = Sale::with(['productTransactions', 'items.product.latestProduction'])
+                ->lockForUpdate()
+                ->findOrFail($sale->id);
 
             /** @var \App\Models\BusinessDay $businessDay */
             $businessDay = BusinessDay::whereKey($context->businessDay->id)
@@ -72,6 +75,14 @@ class SaleService
             $sale->items->each(function ($item) use ($context, $sale) {
                 $product = $item->product;
                 $qty     = $item->quantity;
+
+                // Update cost
+                $unitCost = optional($product->latestProduction)->unit_cost ?? 0;
+
+                $item->update([
+                    'unit_cost'  => $unitCost,
+                    'total_cost' => $unitCost * $qty,
+                ]);
 
                 // Ledger write: RESERVE
                 $this->stockService->reserve(
