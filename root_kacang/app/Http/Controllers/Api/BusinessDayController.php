@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\LocationType;
 use App\Http\Controllers\Controller;
 use App\Models\BusinessDay;
 use App\Models\Location;
 use App\Services\BusinessDayService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class BusinessDayController extends Controller
 {
@@ -56,18 +58,33 @@ class BusinessDayController extends Controller
         return response()->json(['message' => "Business day for $location->name open successfully."], 201);
     }
 
+    /**
+     * Close the active business day for a location.
+     *
+     * The $receivedCash (amount) parameter represents the physical cash counted
+     * during closing. It is required for sales_point locations and optional for
+     * other location types.
+     */
     public function close(Request $request, BusinessDayService $service): JsonResponse
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'location' => ['required', 'exists:locations,_id'],
+            'amount'   => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        $validator->sometimes('amount', 'required', function ($input) {
+            $location = Location::firstWhere('_id', $input->location);
+            return $location?->type === LocationType::SALE_POINT;
+        });
+
+        $validated = $validator->validate();
 
         /** @var \App\Models\Location $location */
         $location = Location::firstWhere('_id', $validated['location']);
 
         $this->authorize('close', $location->openBusinessDay);
 
-        $service->close($location->id, $request->user()->id);
+        $service->close($location->id, $request->user()->id, $validated['amount'] ?? null);
 
         return response()->json(['message' => "Business day for $location->name closed successfully."], 201);
     }

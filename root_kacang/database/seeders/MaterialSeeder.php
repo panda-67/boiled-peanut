@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\ReferenceType;
+use App\Enums\StockMovementType;
 use App\Models\Location;
 use App\Models\Material;
 use App\Models\StockMovement;
@@ -35,7 +36,7 @@ class MaterialSeeder extends Seeder
                 'material_id' => $material->id,
                 'location_id' => $central->id,
                 'quantity' => 100,
-                'type' => 'in',
+                'type' => StockMovementType::IN,
                 'reference_type' => ReferenceType::INITIAL,
                 'reference_id' => 1,
             ]);

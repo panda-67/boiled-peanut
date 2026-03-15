@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Domain\Guards\LocationGuard;
 use App\Enums\ReferenceType;
 use App\Models\BusinessDay;
-use App\Models\Production;
 use App\Models\Sale;
 use App\Repositories\SaleRepository;
 use App\Services\Context\ActiveContextResolver;

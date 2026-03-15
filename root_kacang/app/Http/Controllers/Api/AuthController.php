@@ -199,7 +199,7 @@ class AuthController extends Controller implements HasMiddleware
 
         return BusinessDay::query()
             ->where('location_id', $location->id)
-            /* ->whereDate('date', today()) */
+            ->latest('date')
             ->first();
     }
 

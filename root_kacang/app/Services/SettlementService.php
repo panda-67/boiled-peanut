@@ -51,8 +51,6 @@ class SettlementService
 
             $this->repository->settle($sale->id);
 
-            $this->business->close($sale->location->id, $sale->user->id);
-
             return $sale->fresh(['settlement']);
         });
     }

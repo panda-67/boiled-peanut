@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\LocationType;
 use App\Enums\UserRole;
 use App\Models\BusinessDay;
 use App\Models\User;
@@ -17,6 +16,6 @@ class BusinessDayPolicy
     public function close(User $user, BusinessDay $businessDay): bool
     {
         return $user->whomActAs(UserRole::MANAGER, UserRole::OWNER)
-            && $businessDay->location->type === LocationType::CENTRAL;
+            && $businessDay->isOpen();
     }
 }
