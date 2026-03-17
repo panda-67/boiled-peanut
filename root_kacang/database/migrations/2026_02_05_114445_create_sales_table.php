@@ -37,7 +37,9 @@ return new class extends Migration
             $table->foreignId('location_id')->constrained('locations')->restrictOnDelete();
             $table->foreignId('business_day_id')->nullable()->constrained('business_days')->restrictOnDelete();
             $table->timestamps();
+
             $table->index(['business_day_id', 'location_id']);
+            $table->index(['business_day_id', 'status']);
         });
 
         /* DB::unprepared(" */

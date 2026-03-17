@@ -13,7 +13,11 @@ return new class extends Migration
     {
         Schema::create('daily_cogs', function (Blueprint $table) {
             $table->id();
-            $table->date('date')->unique();
+            $table->foreignId('business_day_id')
+                ->unique()
+                ->nullable()
+                ->constrained('business_days')
+                ->restrictOnDelete();
             $table->integer('quantity_sold');
             $table->integer('average_cost');
             $table->integer('cogs_amount');

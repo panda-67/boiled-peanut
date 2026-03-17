@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[UsePolicy(BusinessDayPolicy::class)]
 class BusinessDay extends Model
@@ -48,14 +49,19 @@ class BusinessDay extends Model
         return $this->belongsTo(User::class, 'closed_by');
     }
 
+    public function productions(): HasMany
+    {
+        return $this->hasMany(Production::class);
+    }
+
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);
     }
 
-    public function productions(): HasMany
+    public function dailyCogs(): HasOne
     {
-        return $this->hasMany(Production::class);
+        return $this->hasOne(DailyCogs::class);
     }
 
     public function isOpen(): bool

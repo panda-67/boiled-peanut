@@ -19,11 +19,12 @@ return new class extends Migration
                 ->unique(); // 1 sale = 1 settlement (fase sekarang)
 
             $table->decimal('amount_received', 15, 2);
-            $table->string('method')->default('cash');
+            $table->string('method')->default('cash')->index();
             $table->timestamp('received_at');
 
             $table->text('note')->nullable();
             $table->timestamps();
+            $table->index(['sale_id']);
         });
     }
 

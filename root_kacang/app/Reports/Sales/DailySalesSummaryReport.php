@@ -2,20 +2,35 @@
 
 namespace App\Reports\Sales;
 
+use App\Enums\SaleStatus;
 use App\Models\Sale;
+use App\Reports\BaseReport;
 use Carbon\Carbon;
 
-class DailySalesSummaryReport
+class DailySalesSummaryReport extends BaseReport
 {
-    public function forDate(Carbon $date)
+    public function forDate(Carbon $date, ?int $locationId = null)
     {
         return Sale::query()
-            ->whereDate('sale_date', $date)
+            ->whereHas('businessDay', function ($q) use ($date, $locationId) {
+                $q->whereDate('date', $date)
+                    ->when($locationId, fn($q) => $q->where('location_id', $locationId));
+            })
+            ->where('status', SaleStatus::SETTLED)
             ->selectRaw('
-                COUNT(*) as total_sales,
-                SUM(total) as gross_sales,
-                SUM(CASE WHEN status = "settled" THEN total ELSE 0 END) as settled_sales,
-                SUM(CASE WHEN status = "confirmed" THEN total ELSE 0 END) as outstanding_sales
+                COUNT(*) as transactions,
+                SUM(total) as total_sales
+            ')
+            ->first();
+    }
+
+    public function between(Carbon $start, Carbon $end, ?int $locationId = null)
+    {
+        return $this->salesBaseQuery($start, $end, $locationId)
+            ->selectRaw('
+                COUNT(sales.id) as transactions,
+                SUM(sales.total) as total_sales,
+                AVG(sales.total) as avg_transaction
             ')
             ->first();
     }

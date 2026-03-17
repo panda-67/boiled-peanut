@@ -29,6 +29,7 @@ return new class extends Migration
 
             // Hindari duplikasi tanggal per location
             $table->unique(['location_id', 'date']);
+            $table->index(['location_id', 'date']);
 
             // Generated column untuk menjamin hanya satu OPEN per location
             $table->unsignedBigInteger('open_location_lock')

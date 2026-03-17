@@ -13,12 +13,10 @@ return new class extends Migration
     {
         Schema::create('daily_closings', function (Blueprint $table) {
             $table->id();
-            $table->date('date')->unique();
+            $table->foreignId('business_day_id')->nullable()->constrained('business_days')->restrictOnDelete();
             $table->integer('expected_cash');   // dari sale settled
             $table->integer('received_cash');   // dari settlement
             $table->integer('difference');      // received - expected
-            $table->enum('status', ['open', 'closed'])->default('open');
-            $table->timestamp('closed_at')->nullable();
             $table->timestamps();
         });
     }

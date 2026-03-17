@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\MaterialController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\SaleController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +45,22 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/{product}/production', 'production');
             Route::post('/{product}/transfer', 'transfer');
             Route::post('/{material}/stock-in', 'stockIn');
+        });
+
+    Route::prefix('reports')
+        ->controller(ReportController::class)
+        ->group(function () {
+            Route::get('/summary', 'summary');
+            // sales
+            Route::get('/sales-detail', 'salesDetail');
+            Route::get('/cash-difference', 'cashDifference');
+            Route::get('/production-vs-sales', 'productionVsSales');
+            Route::get('/out-standing-sales', 'outstandingSales');
+            // stocks
+            Route::get('/product-stock', 'productStock');
+            Route::get('/material-stock', 'materialStock');
+            Route::get('/{material}/material-ledger', 'materialLedger');
+            Route::get('/mateial-daily-usage', 'dailyMaterialUsage');
         });
 });
 

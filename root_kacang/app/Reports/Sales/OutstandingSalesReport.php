@@ -9,9 +9,13 @@ class OutstandingSalesReport
     public function all()
     {
         return Sale::query()
+            ->where('payment_status', 'unpaid')
             ->where('status', 'confirmed')
-            ->select('id', 'sale_date', 'total')
-            ->orderBy('sale_date')
+            ->select([
+                'invoice_number',
+                'sale_date',
+                'total'
+            ])
             ->get();
     }
 }

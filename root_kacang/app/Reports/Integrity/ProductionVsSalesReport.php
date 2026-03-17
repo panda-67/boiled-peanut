@@ -2,19 +2,21 @@
 
 namespace App\Reports\Integrity;
 
-use App\Models\ProductTransaction;
+use Illuminate\Support\Facades\DB;
 
 class ProductionVsSalesReport
 {
     public function summary()
     {
-        $produced = ProductTransaction::where('type', 'in')->sum('quantity');
-        $sold     = abs(ProductTransaction::where('type', 'out')->sum('quantity'));
-
-        return [
-            'produced' => $produced,
-            'sold'     => $sold,
-            'balance'  => $produced - $sold,
-        ];
+        return DB::table('productions')
+            ->join('products', 'products.id', '=', 'productions.product_id')
+            ->leftJoin('sale_items', 'sale_items.product_id', '=', 'products.id')
+            ->selectRaw("
+                products.name,
+                SUM(productions.output_quantity) produced,
+                SUM(sale_items.quantity) sold
+            ")
+            ->groupBy('products.name')
+            ->get();
     }
 }
