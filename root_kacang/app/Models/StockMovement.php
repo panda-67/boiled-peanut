@@ -22,6 +22,7 @@ class StockMovement extends Model
     protected $casts = [
         'quantity' => 'decimal:3',
         'type' => StockMovementType::class,
+        'reference_type' => ReferenceType::class
     ];
 
     public function material(): BelongsTo

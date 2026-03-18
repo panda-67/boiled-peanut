@@ -55,12 +55,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/sales-detail', 'salesDetail');
             Route::get('/cash-difference', 'cashDifference');
             Route::get('/production-vs-sales', 'productionVsSales');
-            Route::get('/out-standing-sales', 'outstandingSales');
+            Route::get('/outstanding-sales', 'outstandingSales');
             // stocks
             Route::get('/product-stock', 'productStock');
             Route::get('/material-stock', 'materialStock');
             Route::get('/{material}/material-ledger', 'materialLedger');
-            Route::get('/mateial-daily-usage', 'dailyMaterialUsage');
+            Route::get('/material-daily-usage', 'dailyMaterialUsage');
         });
 });
 

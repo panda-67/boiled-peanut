@@ -22,7 +22,7 @@ class DailySettlementReport
             ->first();
     }
 
-    public function between(Carbon $start, Carbon $end, ?int $locationId = null)
+    public function between(Carbon $start, Carbon $end, ?string $locationId = null)
     {
         return DB::table('settlements')
             ->join('sales', 'sales.id', '=', 'settlements.sale_id')

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 class DailyProfitReport extends BaseReport
 {
-    public function forDate(Carbon $date, ?int $locationId = null)
+    public function forDate(Carbon $date, ?string $locationId = null)
     {
         $sales = Sale::query()
             ->whereHas('businessDay', function ($q) use ($date, $locationId) {
@@ -35,7 +35,7 @@ class DailyProfitReport extends BaseReport
         ];
     }
 
-    public function between(Carbon $start, Carbon $end, ?int $locationId = null)
+    public function between(Carbon $start, Carbon $end, ?string $locationId = null)
     {
         $sales = $this->salesBaseQuery($start, $end, $locationId)
             ->sum('sales.total');

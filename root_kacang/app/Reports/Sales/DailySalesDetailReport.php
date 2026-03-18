@@ -2,18 +2,15 @@
 
 namespace App\Reports\Sales;
 
-use App\Enums\SaleStatus;
-use App\Models\Sale;
+use App\Reports\BaseReport;
 use Illuminate\Support\Carbon;
 
-class DailySalesDetailReport
+class DailySalesDetailReport extends BaseReport
 {
-    public function forDate(Carbon $date)
+    public function forDate(Carbon $start, Carbon $end)
     {
-        return Sale::query()
+        return $this->salesBaseQuery($start, $end)
             ->with(['items.product', 'user'])
-            ->whereHas('businessDay', fn($q) => $q->whereDate('date', $date))
-            ->where('status', SaleStatus::SETTLED)
             ->orderBy('sale_date')
             ->get();
     }

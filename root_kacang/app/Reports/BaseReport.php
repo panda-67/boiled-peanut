@@ -13,7 +13,7 @@ abstract class BaseReport
     protected function businessDayQuery(
         ?Carbon $start = null,
         ?Carbon $end = null,
-        ?int $locationId = null
+        ?string $locationId = null
     ) {
         return BusinessDay::query()
             ->when($start, fn($q) => $q->whereDate('date', '>=', $start))
@@ -25,7 +25,7 @@ abstract class BaseReport
     protected function salesBaseQuery(
         ?Carbon $start = null,
         ?Carbon $end = null,
-        ?int $locationId = null
+        ?string $locationId = null
     ) {
         return Sale::query()
             ->join('business_days', 'business_days.id', '=', 'sales.business_day_id')

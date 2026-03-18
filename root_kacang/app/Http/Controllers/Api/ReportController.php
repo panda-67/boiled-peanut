@@ -57,12 +57,14 @@ class ReportController extends Controller
     public function salesDetail(Request $request, DailySalesDetailReport $report): JsonResponse
     {
         $validated = $request->validate([
-            'date' => ['required', 'date']
+            'start_date' => ['required', 'date'],
+            'end_date'   => ['required', 'date'],
         ]);
 
-        $date = Carbon::parse($validated['date']);
+        $start = Carbon::parse($validated['start_date']);
+        $end   = Carbon::parse($validated['end_date']);
 
-        $sales = $report->forDate($date);
+        $sales = $report->forDate($start, $end);
 
         return response()->json([
             'data' => $sales,
@@ -117,13 +119,15 @@ class ReportController extends Controller
     public function dailyMaterialUsage(Request $request, DailyMaterialUsageReport $report): JsonResponse
     {
         $validated = $request->validate([
-            'date' => ['required', 'date']
+            'start_date' => ['required', 'date'],
+            'end_date'   => ['required', 'date'],
         ]);
 
-        $date = Carbon::parse($validated['date']);
+        $start = Carbon::parse($validated['start_date']);
+        $end   = Carbon::parse($validated['end_date']);
 
         return response()->json([
-            'data' => $report->forDate($date)
+            'data' => $report->forDate($start, $end)
         ]);
     }
 }

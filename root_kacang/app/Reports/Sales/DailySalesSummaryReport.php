@@ -9,7 +9,7 @@ use Carbon\Carbon;
 
 class DailySalesSummaryReport extends BaseReport
 {
-    public function forDate(Carbon $date, ?int $locationId = null)
+    public function forDate(Carbon $date, ?string $locationId = null)
     {
         return Sale::query()
             ->whereHas('businessDay', function ($q) use ($date, $locationId) {
@@ -24,7 +24,7 @@ class DailySalesSummaryReport extends BaseReport
             ->first();
     }
 
-    public function between(Carbon $start, Carbon $end, ?int $locationId = null)
+    public function between(Carbon $start, Carbon $end, ?string $locationId = null)
     {
         return $this->salesBaseQuery($start, $end, $locationId)
             ->selectRaw('

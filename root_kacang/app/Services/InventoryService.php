@@ -15,8 +15,13 @@ class InventoryService
 
         $locations = Location::where('is_active', true)
             ->when($type, fn($q, $t) => $q->where('type', $t))
-            ->when($locationId, fn($q, $id) => $q->where('_id', $id))
             ->get(['id', '_id', 'name']);
+
+        if ($locationId) {
+            $locations = $locations->where('_id', $locationId)->values();
+        }
+
+        $locationIds = $locations->pluck('id');
 
         $transactions = DB::table('product_transactions')
             ->select(
@@ -35,8 +40,8 @@ class InventoryService
                     END) as reserved
                 ")
             )
-            ->when($locationId, function ($q) use ($locations) {
-                $q->where('location_id', $locations->first()->id);
+            ->when($locationId, function ($q) use ($locationIds) {
+                $q->whereIn('location_id', $locationIds);
             })
             ->groupBy('product_id', 'location_id')
             ->get()
