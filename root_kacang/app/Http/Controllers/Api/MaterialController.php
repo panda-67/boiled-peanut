@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ItemType;
 use App\Http\Controllers\Controller;
+use App\Models\Item;
 use App\Models\Location;
-use App\Models\Material;
 use Illuminate\Http\Request;
 
 class MaterialController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Material::query();
+        $query = Item::query()->where('type', ItemType::RAW);
 
         // Optional filter: is_stocked
         if ($request->has('is_stocked')) {

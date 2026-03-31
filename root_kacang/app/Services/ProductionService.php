@@ -3,9 +3,8 @@
 namespace App\Services;
 
 use App\Enums\ReferenceType;
+use App\Models\Item;
 use App\Models\Location;
-use App\Models\Material;
-use App\Models\Product;
 use App\Models\Production;
 use App\Services\Context\ActiveContext;
 use Illuminate\Support\Collection;
@@ -14,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 class ProductionService
 {
     public function draft(
-        Product $product,
+        Item $product,
         int $qty,
         Collection $materials,
         ActiveContext $context
@@ -22,14 +21,14 @@ class ProductionService
         /** @var \App\Models\Production $production */
         $production = Production::create([
             'business_day_id' => $context->businessDay->id,
-            'product_id' => $product->id,
+            'item_id' => $product->id,
             'output_quantity' => $qty,
             'date' => now()
 
         ]);
 
         $materialIds = $materials->pluck('material_id');
-        $materialModels = Material::whereIn('id', $materialIds)->get()->keyBy('id');
+        $materialModels = Item::whereIn('id', $materialIds)->get()->keyBy('id');
 
         $data = $materials->mapWithKeys(function ($m) use ($materialModels) {
             $material = $materialModels[$m['material_id']];
@@ -78,7 +77,7 @@ class ProductionService
 
             // Product IN
             app(ProductStockService::class)->stockIn(
-                product: $production->product,
+                product: $production->item,
                 location: $central,
                 qty: $qty,
                 referenceType: ReferenceType::PRODUCTION,

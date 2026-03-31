@@ -3,14 +3,14 @@
 namespace App\Services;
 
 use App\Enums\ReferenceType;
+use App\Models\Item;
 use App\Models\Location;
-use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 
 class ProductTransferService
 {
     public function transfer(
-        Product $product,
+        Item $product,
         Location $from,
         Location $to,
         float $qty,

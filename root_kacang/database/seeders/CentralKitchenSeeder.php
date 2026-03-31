@@ -2,9 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ItemType;
+use App\Enums\ReferenceType;
+use App\Enums\StockMovementType;
+use App\Models\Item;
 use App\Models\Location;
-use App\Models\Product;
-use App\Models\ProductTransaction;
+use App\Models\StockMovement;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -14,16 +17,16 @@ class CentralKitchenSeeder extends Seeder
     public function run(): void
     {
         $central = Location::firstWhere('name', 'Central Kitchen');
-        $products = Product::all();
+        $products = Item::where('type', ItemType::FINISHED)->get();
 
         $products->each(function ($product) use ($central) {
-            ProductTransaction::create([
-                'product_id'     => $product->id,
+            StockMovement::create([
+                'item_id'     => $product->id,
                 'location_id'    => $central->id,
                 'date'           => now(),
-                'type'           => 'in',
+                'type'           => StockMovementType::IN,
                 'quantity'       => 1000,
-                'reference_type' => 'production',
+                'reference_type' => ReferenceType::PRODUCTION,
                 'reference_id'   => (string) Str::uuid(),
                 'note'           => 'Initial stock seeding',
                 'created_at'     => now(),

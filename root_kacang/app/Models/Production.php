@@ -18,7 +18,7 @@ class Production extends Model
 
     protected $fillable = [
         'date',
-        'product_id',
+        'item_id',
         'output_quantity',
         'business_day_id',
         'total_cost',
@@ -34,7 +34,7 @@ class Production extends Model
 
     public function materials(): BelongsToMany
     {
-        return $this->belongsToMany(Material::class, 'production_materials')
+        return $this->belongsToMany(Item::class, 'production_materials')
             ->withPivot([
                 'production_id',
                 'quantity_used',
@@ -44,9 +44,9 @@ class Production extends Model
             ->withTimestamps();
     }
 
-    public function product(): BelongsTo
+    public function item(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Item::class);
     }
 
     public function businessDay(): BelongsTo

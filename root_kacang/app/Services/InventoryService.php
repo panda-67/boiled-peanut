@@ -2,16 +2,18 @@
 
 namespace App\Services;
 
-use App\Models\Product;
+use App\Enums\ItemType;
+use App\Models\Item;
 use App\Models\Location;
-use App\Models\Material;
 use Illuminate\Support\Facades\DB;
 
 class InventoryService
 {
     public function get(?string $type, ?string $locationId)
     {
-        $products = Product::select('id', 'name', 'selling_price')->get();
+        $products = Item::where('type', ItemType::FINISHED)
+            ->select('id', 'name', 'unit', 'default_price')
+            ->get();
 
         $locations = Location::where('is_active', true)
             ->when($type, fn($q, $t) => $q->where('type', $t))
@@ -23,9 +25,9 @@ class InventoryService
 
         $locationIds = $locations->pluck('id');
 
-        $transactions = DB::table('product_transactions')
+        $transactions = DB::table('stock_movements')
             ->select(
-                'product_id',
+                'item_id',
                 'location_id',
                 DB::raw("
                     SUM(CASE
@@ -43,9 +45,9 @@ class InventoryService
             ->when($locationId, function ($q) use ($locationIds) {
                 $q->whereIn('location_id', $locationIds);
             })
-            ->groupBy('product_id', 'location_id')
+            ->groupBy('item_id', 'location_id')
             ->get()
-            ->groupBy('product_id');
+            ->groupBy('item_id');
 
         $result = collect([]);
 
@@ -74,7 +76,8 @@ class InventoryService
             $result->push([
                 'id'        => $product->id,
                 'name'      => $product->name,
-                'price'     => $product->selling_price,
+                'unit'      => $product->unit,
+                'price'     => $product->default_price,
                 'locations' => $productLocations,
             ]);
         }
@@ -83,7 +86,9 @@ class InventoryService
 
         if ($type === 'central' && $locations->isNotEmpty()) {
 
-            $materialModels = Material::where('is_stocked', true)->get();
+            $materialModels = Item::where('type', ItemType::RAW)
+                ->where('is_stocked', true)
+                ->get();
 
             foreach ($materialModels as $material) {
 
@@ -103,6 +108,7 @@ class InventoryService
                 $materials->push([
                     'id'        => $material->id,
                     'name'      => $material->name,
+                    'unit'      => $material->unit,
                     'price'     => $material->default_unit_cost,
                     'locations' => $materialLocations,
                 ]);

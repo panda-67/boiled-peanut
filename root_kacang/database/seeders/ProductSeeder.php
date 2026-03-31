@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ItemType;
+use App\Models\Item;
 use App\Models\Location;
-use App\Models\Product;
-use App\Models\ProductTransaction;
+use App\Models\StockMovement;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -28,11 +29,21 @@ class ProductSeeder extends Seeder
         $locations = collect([$main, $second]);
 
         // 2. Buat 2 produk
-        $products = Product::factory()
+        $products = Item::factory()
             ->count(2)
             ->sequence(
-                ['name' => 'Kacang Rebus', 'selling_price' => 7000],
-                ['name' => 'Ubi Goreng', 'selling_price' => 5000],
+                [
+                    'name' => 'Kacang Rebus',
+                    'default_price' => 7000,
+                    'type' => ItemType::FINISHED,
+                    'is_sellable' => true
+                ],
+                [
+                    'name' => 'Ubi Goreng',
+                    'default_price' => 5000,
+                    'type' => ItemType::FINISHED,
+                    'is_sellable' => true
+                ],
             )
             ->create();
 
@@ -42,7 +53,7 @@ class ProductSeeder extends Seeder
         foreach ($locations as $location) {
             foreach ($products as $product) {
                 $transactions[] = [
-                    'product_id'     => $product->id,
+                    'item_id'        => $product->id,
                     'location_id'    => $location->id,
                     'date'           => now(),
                     'type'           => 'in',
@@ -56,6 +67,6 @@ class ProductSeeder extends Seeder
             }
         }
 
-        ProductTransaction::insert($transactions);
+        StockMovement::insert($transactions);
     }
 }

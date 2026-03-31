@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use App\Enums\ProductTransactionType;
 use App\Enums\ReferenceType;
 use App\Enums\SaleStatus;
+use App\Enums\StockMovementType;
+use App\Models\Item;
 use App\Models\Location;
-use App\Models\Product;
-use App\Models\ProductTransaction;
 use App\Models\Sale;
+use App\Models\StockMovement;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -16,21 +16,21 @@ use InvalidArgumentException;
 class ProductStockService
 {
     public function stockIn(
-        Product $product,
+        Item $product,
         Location $location,
         float $qty,
         ReferenceType $referenceType,
         string $referenceId,
         ?string $note = null
-    ): ProductTransaction {
+    ): StockMovement {
         if ($qty <= 0) {
             throw new InvalidArgumentException('Quantity must be positive');
         }
 
-        return ProductTransaction::create([
-            'product_id'     => $product->id,
+        return StockMovement::create([
+            'item_id'        => $product->id,
             'location_id'    => $location->id,
-            'type'           => ProductTransactionType::IN,
+            'type'           => StockMovementType::IN,
             'quantity'       => $qty,
             'reference_type' => $referenceType,
             'reference_id'   => $referenceId,
@@ -40,20 +40,20 @@ class ProductStockService
     }
 
     public function stockOut(
-        Product $product,
+        Item $product,
         Location $location,
         float $qty,
         ReferenceType $referenceType,
         string $referenceId,
         ?string $note = null
-    ): ProductTransaction {
+    ): StockMovement {
         if ($product->stockAt($location) < $qty) {
             throw new \Exception("Stok produk tidak mencukupi di lokasi {$location->name}");
         }
-        return ProductTransaction::create([
-            'product_id'     => $product->id,
+        return StockMovement::create([
+            'item_id'        => $product->id,
             'location_id'    => $location->id,
-            'type'           => ProductTransactionType::OUT,
+            'type'           => StockMovementType::OUT,
             'quantity'       => -abs($qty),
             'reference_type' => $referenceType,
             'reference_id'   => $referenceId,
@@ -63,7 +63,7 @@ class ProductStockService
     }
 
     public function reserve(
-        Product $product,
+        Item $product,
         Location $location,
         SaleStatus $saleStatus,
         int $qty,
@@ -79,11 +79,11 @@ class ProductStockService
             throw new DomainException('SALE_NOT_RESERVABLE');
         }
 
-        $exists = ProductTransaction::query()
+        $exists = StockMovement::query()
             ->where('reference_type', $referenceType)
             ->where('reference_id', $referenceId)
-            ->where('product_id', $product->id)
-            ->where('type', ProductTransactionType::RESERVE)
+            ->where('item_id', $product->id)
+            ->where('type', StockMovementType::RESERVE)
             ->exists();
 
         if ($exists) {
@@ -93,8 +93,8 @@ class ProductStockService
         DB::transaction(function () use ($product, $location, $qty, $referenceType, $referenceId, $note) {
 
             // Lock stock rows for this product + location
-            ProductTransaction::query()
-                ->where('product_id', $product->id)
+            StockMovement::query()
+                ->where('item_id', $product->id)
                 ->where('location_id', $location->id)
                 ->lockForUpdate()
                 ->get();
@@ -105,10 +105,10 @@ class ProductStockService
                 throw new DomainException('INSUFFICIENT_AVAILABLE_STOCK');
             }
 
-            ProductTransaction::create([
-                'product_id'     => $product->id,
+            StockMovement::create([
+                'item_id'        => $product->id,
                 'location_id'    => $location->id,
-                'type'           => ProductTransactionType::RESERVE,
+                'type'           => StockMovementType::RESERVE,
                 'quantity'       => $qty,
                 'reference_type' => $referenceType,
                 'reference_id'   => $referenceId,
@@ -126,10 +126,10 @@ class ProductStockService
 
         DB::transaction(function () use ($sale) {
 
-            $reserves = ProductTransaction::query()
+            $reserves = StockMovement::query()
                 ->where('reference_type', ReferenceType::SALE)
                 ->where('reference_id', $sale->id)
-                ->where('type', ProductTransactionType::RESERVE)
+                ->where('type', StockMovementType::RESERVE)
                 ->where('quantity', '>', 0) // only active reserves
                 ->lockForUpdate()
                 ->get();
@@ -141,11 +141,11 @@ class ProductStockService
             $reserves->each(function ($reserve) use ($sale) {
 
                 // prevent double finalize
-                $alreadyOut = ProductTransaction::query()
+                $alreadyOut = StockMovement::query()
                     ->where('reference_type', ReferenceType::SALE)
                     ->where('reference_id', $sale->id)
-                    ->where('product_id', $reserve->product_id)
-                    ->where('type', ProductTransactionType::OUT)
+                    ->where('item_id', $reserve->product_id)
+                    ->where('type', StockMovementType::OUT)
                     ->exists();
 
                 if ($alreadyOut) {
@@ -153,10 +153,10 @@ class ProductStockService
                 }
 
                 // OUT
-                ProductTransaction::create([
-                    'product_id'     => $reserve->product_id,
+                StockMovement::create([
+                    'item_id'        => $reserve->product_id,
                     'location_id'    => $reserve->location_id,
-                    'type'           => ProductTransactionType::OUT,
+                    'type'           => StockMovementType::OUT,
                     'quantity'       => -$reserve->quantity,
                     'reference_type' => ReferenceType::SALE,
                     'reference_id'   => $sale->id,
@@ -165,10 +165,10 @@ class ProductStockService
                 ]);
 
                 // Reverse RESERVE
-                ProductTransaction::create([
-                    'product_id'     => $reserve->product_id,
+                StockMovement::create([
+                    'ite_id'         => $reserve->product_id,
                     'location_id'    => $reserve->location_id,
-                    'type'           => ProductTransactionType::RESERVE,
+                    'type'           => StockMovementType::RESERVE,
                     'quantity'       => -$reserve->quantity,
                     'reference_type' => ReferenceType::SALE,
                     'reference_id'   => $sale->id,
@@ -186,10 +186,10 @@ class ProductStockService
         }
 
         DB::transaction(function () use ($sale) {
-            $reserves = ProductTransaction::query()
+            $reserves = StockMovement::query()
                 ->where('reference_type', ReferenceType::SALE)
                 ->where('reference_id', $sale->id)
-                ->where('type', ProductTransactionType::RESERVE)
+                ->where('type', StockMovementType::RESERVE)
                 ->where('quantity', '>', 0) // active only
                 ->lockForUpdate()
                 ->get();
@@ -199,10 +199,10 @@ class ProductStockService
             }
 
             $reserves->each(function ($reserve) use ($sale) {
-                ProductTransaction::create([
-                    'product_id'     => $reserve->product_id,
+                StockMovement::create([
+                    'item_id'        => $reserve->product_id,
                     'location_id'    => $reserve->location_id,
-                    'type'           => ProductTransactionType::RESERVE,
+                    'type'           => StockMovementType::RESERVE,
                     'quantity'       => -$reserve->quantity,
                     'reference_type' => ReferenceType::SALE,
                     'reference_id'   => $sale->id,

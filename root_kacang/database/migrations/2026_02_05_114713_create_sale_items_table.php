@@ -17,7 +17,7 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
-            $table->foreignId('product_id')
+            $table->foreignId('item_id')
                 ->constrained()
                 ->restrictOnDelete();
 
@@ -28,7 +28,7 @@ return new class extends Migration
             $table->decimal('total_cost', 15, 2)->default(0);
             $table->timestamps();
             $table->index(['sale_id']);
-            $table->index(['product_id']);
+            $table->index(['item_id']);
         });
     }
 

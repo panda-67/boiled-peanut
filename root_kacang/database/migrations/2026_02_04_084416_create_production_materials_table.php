@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('production_materials', function (Blueprint $table) {
             $table->id();
             $table->foreignUuid('production_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('material_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('item_id')->constrained()->cascadeOnDelete();
 
             $table->decimal('quantity_used', 10, 2);
             $table->decimal('unit_cost', 15, 2);

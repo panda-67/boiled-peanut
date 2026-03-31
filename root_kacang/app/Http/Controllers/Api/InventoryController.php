@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\BusinessDay;
+use App\Models\Item;
 use App\Models\Location;
 use App\Models\Material;
 use App\Models\Product;
@@ -30,7 +31,7 @@ class InventoryController extends Controller
         ));
     }
 
-    public function production(Product $product, Request $request, ProductionService $service): JsonResponse
+    public function production(Item $product, Request $request, ProductionService $service): JsonResponse
     {
         // INFO: In case will have multiple central point and FE will send _id instead of id for location
         $central = Location::where('name', 'Central Kitchen')->firstOrFail();
@@ -44,7 +45,7 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'quantity' => ['required', 'integer', 'min:1'],
             'materials' => ['required', 'array', 'min:1'],
-            'materials.*.material_id' => ['required', 'exists:materials,id'],
+            'materials.*.material_id' => ['required', 'exists:items,id'],
             'materials.*.quantity_used' => ['required', 'numeric', 'min:0.0001'],
         ]);
 
@@ -58,7 +59,7 @@ class InventoryController extends Controller
         return response()->json(['message' => 'Production execute success.'], 201);
     }
 
-    public function stockIn(Material $material, Request $request, StockMovementService $service): JsonResponse
+    public function stockIn(Item $material, Request $request, StockMovementService $service): JsonResponse
     {
         // INFO: In case will have multiple central point and FE will send _id instead of id for location
         $central = Location::where('name', 'Central Kitchen')->firstOrFail();
@@ -89,7 +90,7 @@ class InventoryController extends Controller
         return response()->json(['message' => 'Material stock successfully added.']);
     }
 
-    public function transfer(Product $product, Request $request, ProductTransferService $service): JsonResponse
+    public function transfer(Item $product, Request $request, ProductTransferService $service): JsonResponse
     {
         $validated = $request->validate([
             'from'        => ['required', 'uuid'],

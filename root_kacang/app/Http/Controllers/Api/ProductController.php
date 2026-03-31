@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ItemType;
 use App\Enums\ProductTransactionType;
+use App\Enums\StockMovementType;
 use App\Http\Controllers\Controller;
-use App\Models\Product;
+use App\Models\Item;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -16,28 +18,29 @@ class ProductController extends Controller
     {
         $locationId = $request->user()->location->id;
 
-        return Product::query()
+        return Item::query()
+            ->where('type', ItemType::FINISHED)
             ->select([
-                'products.id',
-                'products.name',
-                'products.selling_price',
-                'products.unit',
+                'items.id',
+                'items.name',
+                'items.default_price',
+                'items.unit',
             ])
             ->selectSub(function ($q) use ($locationId) {
-                $q->from('product_transactions')
-                    ->whereColumn('product_id', 'products.id')
+                $q->from('stock_movements')
+                    ->whereColumn('item_id', 'items.id')
                     ->where('location_id', $locationId)
                     ->whereIn('type', [
-                        ProductTransactionType::IN,
-                        ProductTransactionType::OUT,
+                        StockMovementType::IN,
+                        StockMovementType::OUT,
                     ])
                     ->selectRaw('COALESCE(SUM(quantity), 0)');
             }, 'stock')
             ->selectSub(function ($q) use ($locationId) {
-                $q->from('product_transactions')
-                    ->whereColumn('product_id', 'products.id')
+                $q->from('stock_movements')
+                    ->whereColumn('item_id', 'items.id')
                     ->where('location_id', $locationId)
-                    ->where('type', ProductTransactionType::RESERVE)
+                    ->where('type', StockMovementType::RESERVE)
                     ->selectRaw('COALESCE(SUM(quantity), 0)');
             }, 'reserved')
             ->latest()
@@ -49,43 +52,11 @@ class ProductController extends Controller
                 return [
                     'id'        => $product->id,
                     'name'      => $product->name,
-                    'price'     => $product->selling_price,
+                    'price'     => $product->default_price,
                     'unit'      => $product->unit,
                     'stock'     => $stock,
                     'available' => $stock - $reserved,
                 ];
             });
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Product $product)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Product $product)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Product $product)
-    {
-        //
     }
 }
